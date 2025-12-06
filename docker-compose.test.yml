@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # PostgreSQL for testing
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: iot-postgres-test
+    environment:
+      POSTGRES_DB: iot_platform_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      - iot-test-network
+
+  # Redis for testing
+  redis-test:
+    image: redis:7-alpine
+    container_name: iot-redis-test
+    ports:
+      - "6380:6379"
+    tmpfs:
+      - /data
+    networks:
+      - iot-test-network
+
+  # Test environment for device-registry
+  device-registry-test:
+    build:
+      context: ./services/device-registry
+      dockerfile: Dockerfile
+    container_name: device-registry-test
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres-test:5432/device_registry_test
+      REDIS_URL: redis://redis-test:6379/0
+      JWT_SECRET_KEY: test-jwt-secret-key
+      DEBUG: "false"
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres-test
+      - redis-test
+    volumes:
+      - ./services/device-registry:/app
+    networks:
+      - iot-test-network
+
+  # Test environment for data-ingestion
+  data-ingestion-test:
+    build:
+      context: ./services/data-ingestion
+      dockerfile: Dockerfile
+    container_name: data-ingestion-test
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka-test:29092
+      REDIS_URL: redis://redis-test:6379/1
+      MQTT_HOST: mosquitto-test
+      MQTT_PORT: 1883
+      DEVICE_REGISTRY_URL: http://device-registry-test:8001
+      JWT_SECRET_KEY: test-jwt-secret-key
+      SERVICE_TOKEN: test-service-token
+      DEBUG: "false"
+    ports:
+      - "8002:8002"
+    depends_on:
+      - redis-test
+      - device-registry-test
+    volumes:
+      - ./services/data-ingestion:/app
+    networks:
+      - iot-test-network
+
+networks:
+  iot-test-network:
+    driver: bridge

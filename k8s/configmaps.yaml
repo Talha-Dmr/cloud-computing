@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: iot-platform
+data:
+  url: "redis://redis:6379"
+  port: "6379"
+  db: "0"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-config
+  namespace: iot-platform
+data:
+  bootstrap-servers: "kafka:29092"
+  topic-data: "iot-data"
+  topic-alerts: "iot-alerts"
+  topic-health: "iot-health"
+  topic-errors: "iot-errors"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mqtt-config
+  namespace: iot-platform
+data:
+  host: "mosquitto"
+  port: "1883"
+  username: ""
+  password: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: iot-platform
+data:
+  host: "postgres"
+  port: "5432"
+  database: "iot_platform"
+  user: "postgres"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: influxdb-config
+  namespace: iot-platform
+data:
+  host: "influxdb"
+  port: "8086"
+  org: "iot-platform"
+  bucket: "sensor-data"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  namespace: iot-platform
+data:
+  host: "rabbitmq"
+  port: "5672"
+  management-port: "15672"
+  user: "admin"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logging-config
+  namespace: iot-platform
+data:
+  level: "INFO"
+  format: "json"

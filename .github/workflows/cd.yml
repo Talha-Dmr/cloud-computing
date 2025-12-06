@@ -1,0 +1,203 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.iot-platform.local
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure kubectl
+      uses: azure/k8s-set-context@v1
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+    - name: Deploy to staging
+      run: |
+        # Apply namespaces
+        kubectl apply -f k8s/namespaces.yaml
+
+        # Apply configurations
+        kubectl apply -f k8s/configmaps.yaml
+        kubectl apply -f k8s/secrets.yaml
+
+        # Deploy applications
+        kubectl apply -f k8s/deployments/
+        kubectl apply -f k8s/services/
+
+        # Wait for deployments
+        kubectl rollout status deployment/device-registry -n iot-platform
+        kubectl rollout status deployment/data-ingestion -n iot-platform
+
+    - name: Run smoke tests
+      run: |
+        # Wait for services to be ready
+        sleep 60
+
+        # Forward ports
+        kubectl port-forward -n iot-platform svc/device-registry 8001:80 &
+        kubectl port-forward -n iot-platform svc/data-ingestion 8002:80 &
+
+        # Wait for port forwarding
+        sleep 10
+
+        # Install test dependencies
+        pip install httpx
+
+        # Run smoke tests
+        python -c "
+import httpx
+import time
+
+# Test device registry
+for i in range(30):
+    try:
+        response = httpx.get('http://localhost:8001/')
+        assert response.status_code == 200
+        print('✓ Device Registry is healthy')
+        break
+    except:
+        time.sleep(2)
+else:
+    raise Exception('Device Registry not responding')
+
+# Test data ingestion
+for i in range(30):
+    try:
+        response = httpx.get('http://localhost:8002/')
+        assert response.status_code == 200
+        print('✓ Data Ingestion is healthy')
+        break
+    except:
+        time.sleep(2)
+else:
+    raise Exception('Data Ingestion not responding')
+
+print('✅ All smoke tests passed')
+        "
+
+    - name: Deploy monitoring
+      run: |
+        # Deploy monitoring stack
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+        helm repo update
+
+        # Install Prometheus
+        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+          --namespace monitoring \
+          --create-namespace \
+          --values monitoring/helm-values.yml \
+          --wait
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://api.iot-platform.com
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure kubectl
+      uses: azure/k8s-set-context@v1
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.KUBE_CONFIG_PROD }}
+
+    - name: Deploy to production
+      run: |
+        # Apply namespaces
+        kubectl apply -f k8s/namespaces.yaml
+
+        # Apply configurations (production-specific)
+        envsubst < k8s/secrets-prod.yaml | kubectl apply -f -
+        kubectl apply -f k8s/configmaps.yaml
+
+        # Deploy applications with production settings
+        helm upgrade --install iot-platform ./helm/iot-platform \
+          --namespace iot-platform \
+          --create-namespace \
+          --values helm/iot-platform/values-prod.yaml \
+          --wait
+
+    - name: Run health checks
+      run: |
+        # Wait for deployments
+        kubectl rollout status deployment/device-registry -n iot-platform
+        kubectl rollout status deployment/data-ingestion -n iot-platform
+
+        # Wait for services to be ready
+        sleep 60
+
+        # Check service health
+        kubectl get pods -n iot-platform
+        kubectl get services -n iot-platform
+
+        # Run comprehensive health checks
+        python -c "
+import httpx
+import time
+
+# Production endpoint
+base_url = 'https://api.iot-platform.com'
+
+# Test health endpoints
+services = [
+    '/api/v1/devices/health',
+    '/api/v1/ingest/health'
+]
+
+for service in services:
+    for i in range(30):
+        try:
+            response = httpx.get(f'{base_url}{service}')
+            assert response.status_code == 200
+            print(f'✓ {service} is healthy')
+            break
+        except:
+            time.sleep(2)
+    else:
+        raise Exception(f'{service} not responding')
+
+print('✅ Production deployment verified')
+        "
+
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always()
+    steps:
+    - name: Notify Slack on Success
+      if: needs.deploy-production.result == 'success'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: "🚀 IoT Platform deployed to production successfully!"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+    - name: Notify Slack on Failure
+      if: needs.deploy-production.result == 'failure'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: "❌ IoT Platform deployment to production failed!"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
