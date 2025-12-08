@@ -1,31 +1,33 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
-from typing import List, Optional, Dict, Any
 import json
 import secrets
-import structlog
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
+import structlog
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
+
+from ..config import settings
 from ..models import device as device_models
 from ..schemas import device as device_schemas
-from ..config import settings
 
 logger = structlog.get_logger()
+
 
 class DeviceService:
     def __init__(self, db: Session):
         self.db = db
 
     async def create_device(
-        self,
-        device_data: device_schemas.DeviceCreate,
-        owner_id: str
+        self, device_data: device_schemas.DeviceCreate, owner_id: str
     ) -> device_models.Device:
         """Create a new device"""
         # Check if device_id already exists
-        existing = self.db.query(device_models.Device).filter(
-            device_models.Device.device_id == device_data.device_id
-        ).first()
+        existing = (
+            self.db.query(device_models.Device)
+            .filter(device_models.Device.device_id == device_data.device_id)
+            .first()
+        )
 
         if existing:
             raise ValueError(f"Device with ID {device_data.device_id} already exists")
@@ -34,7 +36,9 @@ class DeviceService:
         api_key = device_data.api_key or self._generate_api_key()
 
         # Convert metadata dict to JSON string
-        metadata_json = json.dumps(device_data.metadata) if device_data.metadata else "{}"
+        metadata_json = (
+            json.dumps(device_data.metadata) if device_data.metadata else "{}"
+        )
 
         db_device = device_models.Device(
             device_id=device_data.device_id,
@@ -49,7 +53,7 @@ class DeviceService:
             metadata_json=metadata_json,
             latitude=device_data.latitude,
             longitude=device_data.longitude,
-            location_name=device_data.location_name
+            location_name=device_data.location_name,
         )
 
         self.db.add(db_device)
@@ -60,7 +64,7 @@ class DeviceService:
             "Device created successfully",
             device_id=db_device.device_id,
             device_name=db_device.name,
-            owner_id=owner_id
+            owner_id=owner_id,
         )
 
         return db_device
@@ -70,7 +74,7 @@ class DeviceService:
         user_id: str,
         skip: int = 0,
         limit: int = 100,
-        status: Optional[str] = None
+        status: Optional[str] = None,
     ) -> List[device_models.Device]:
         """List devices for a user with optional filtering"""
         query = self.db.query(device_models.Device).filter(
@@ -82,20 +86,23 @@ class DeviceService:
 
         return query.offset(skip).limit(limit).all()
 
-    async def get_device(self, device_id: str, owner_id: str) -> Optional[device_models.Device]:
+    async def get_device(
+        self, device_id: str, owner_id: str
+    ) -> Optional[device_models.Device]:
         """Get device by ID and owner"""
-        return self.db.query(device_models.Device).filter(
-            and_(
-                device_models.Device.device_id == device_id,
-                device_models.Device.owner_id == owner_id
+        return (
+            self.db.query(device_models.Device)
+            .filter(
+                and_(
+                    device_models.Device.device_id == device_id,
+                    device_models.Device.owner_id == owner_id,
+                )
             )
-        ).first()
+            .first()
+        )
 
     async def update_device(
-        self,
-        device_id: str,
-        device_update: device_schemas.DeviceUpdate,
-        owner_id: str
+        self, device_id: str, device_update: device_schemas.DeviceUpdate, owner_id: str
     ) -> Optional[device_models.Device]:
         """Update device information"""
         db_device = await self.get_device(device_id, owner_id)
@@ -106,10 +113,10 @@ class DeviceService:
         update_data = device_update.model_dump(exclude_unset=True)
 
         # Handle metadata separately
-        if 'metadata' in update_data:
-            metadata_json = json.dumps(update_data['metadata'])
-            update_data['metadata_json'] = metadata_json
-            del update_data['metadata']
+        if "metadata" in update_data:
+            metadata_json = json.dumps(update_data["metadata"])
+            update_data["metadata_json"] = metadata_json
+            del update_data["metadata"]
 
         for field, value in update_data.items():
             setattr(db_device, field, value)
@@ -120,9 +127,7 @@ class DeviceService:
         self.db.refresh(db_device)
 
         logger.info(
-            "Device updated successfully",
-            device_id=device_id,
-            owner_id=owner_id
+            "Device updated successfully", device_id=device_id, owner_id=owner_id
         )
 
         return db_device
@@ -137,22 +142,24 @@ class DeviceService:
         self.db.commit()
 
         logger.info(
-            "Device deleted successfully",
-            device_id=device_id,
-            owner_id=owner_id
+            "Device deleted successfully", device_id=device_id, owner_id=owner_id
         )
 
         return True
 
     async def authenticate_device(self, device_id: str, api_key: str) -> str:
         """Authenticate device and return JWT token"""
-        device = self.db.query(device_models.Device).filter(
-            and_(
-                device_models.Device.device_id == device_id,
-                device_models.Device.api_key == api_key,
-                device_models.Device.status == device_models.DeviceStatus.ACTIVE
+        device = (
+            self.db.query(device_models.Device)
+            .filter(
+                and_(
+                    device_models.Device.device_id == device_id,
+                    device_models.Device.api_key == api_key,
+                    device_models.Device.status == device_models.DeviceStatus.ACTIVE,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if not device:
             raise ValueError("Invalid device credentials or device not active")
@@ -163,26 +170,27 @@ class DeviceService:
 
         # Generate JWT token
         from .auth_service import AuthService
+
         auth_service = AuthService(self.db)
         token = auth_service.create_device_token(device_id)
 
         logger.info(
             "Device authenticated successfully",
             device_id=device_id,
-            owner_id=device.owner_id
+            owner_id=device.owner_id,
         )
 
         return token
 
     async def update_device_status(
-        self,
-        device_id: str,
-        status: device_models.DeviceStatus
+        self, device_id: str, status: device_models.DeviceStatus
     ) -> bool:
         """Update device status"""
-        device = self.db.query(device_models.Device).filter(
-            device_models.Device.device_id == device_id
-        ).first()
+        device = (
+            self.db.query(device_models.Device)
+            .filter(device_models.Device.device_id == device_id)
+            .first()
+        )
 
         if not device:
             return False
@@ -196,23 +204,20 @@ class DeviceService:
         self.db.commit()
 
         logger.info(
-            "Device status updated",
-            device_id=device_id,
-            new_status=status.value
+            "Device status updated", device_id=device_id, new_status=status.value
         )
 
         return True
 
     async def update_health(
-        self,
-        device_id: str,
-        is_healthy: bool,
-        message: Optional[str] = None
+        self, device_id: str, is_healthy: bool, message: Optional[str] = None
     ) -> bool:
         """Update device health status"""
-        device = self.db.query(device_models.Device).filter(
-            device_models.Device.device_id == device_id
-        ).first()
+        device = (
+            self.db.query(device_models.Device)
+            .filter(device_models.Device.device_id == device_id)
+            .first()
+        )
 
         if not device:
             return False
@@ -227,22 +232,22 @@ class DeviceService:
             "Device health updated",
             device_id=device_id,
             is_healthy=is_healthy,
-            message=message
+            message=message,
         )
 
         return True
 
     async def get_device_metrics(
-        self,
-        device_id: str,
-        limit: int = 100
+        self, device_id: str, limit: int = 100
     ) -> List[device_models.DeviceMetrics]:
         """Get recent metrics for a device"""
-        return self.db.query(device_models.DeviceMetrics).filter(
-            device_models.DeviceMetrics.device_id == device_id
-        ).order_by(
-            device_models.DeviceMetrics.timestamp.desc()
-        ).limit(limit).all()
+        return (
+            self.db.query(device_models.DeviceMetrics)
+            .filter(device_models.DeviceMetrics.device_id == device_id)
+            .order_by(device_models.DeviceMetrics.timestamp.desc())
+            .limit(limit)
+            .all()
+        )
 
     def _generate_api_key(self) -> str:
         """Generate a secure API key"""

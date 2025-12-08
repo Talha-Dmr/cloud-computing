@@ -2,9 +2,10 @@
 Integration Tests for Data Ingestion API Endpoints
 """
 
-import pytest
 import json
 import time
+
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -46,7 +47,7 @@ class TestDataIngestionAPI:
         """Test ingestion with invalid data structure"""
         invalid_data = {
             "device_id": "",  # Empty device_id
-            "data": []  # Empty data array
+            "data": [],  # Empty data array
         }
 
         response = test_client.post("/ingest", json=invalid_data)
@@ -77,9 +78,9 @@ class TestDataIngestionAPI:
                 {
                     "metric_name": "temperature",
                     "value": 23.5,
-                    "timestamp": "2024-01-01T12:00:00Z"
+                    "timestamp": "2024-01-01T12:00:00Z",
                 }
-            ]
+            ],
         }
 
         # Ingest data (might need auth)
@@ -122,7 +123,7 @@ class TestDataIngestionAPI:
             "status": "healthy",
             "battery_level": 85,
             "signal_strength": -45,
-            "last_seen": "2024-01-01T12:00:00Z"
+            "last_seen": "2024-01-01T12:00:00Z",
         }
 
         response = test_client.post("/health-check", json=health_data)
@@ -189,14 +190,19 @@ class TestDataIngestionAPI:
         response = test_client.post("/ingest", json=performance_test_data)
 
         # Should handle large payloads gracefully
-        assert response.status_code in [200, 201, 400, 413, 401, 403]  # 413 = Payload Too Large
+        assert response.status_code in [
+            200,
+            201,
+            400,
+            413,
+            401,
+            403,
+        ]  # 413 = Payload Too Large
 
     def test_invalid_json_payload(self, test_client):
         """Test ingestion with invalid JSON"""
         response = test_client.post(
-            "/ingest",
-            data="invalid json",
-            headers={"Content-Type": "application/json"}
+            "/ingest", data="invalid json", headers={"Content-Type": "application/json"}
         )
 
         assert response.status_code == 422
@@ -205,12 +211,18 @@ class TestDataIngestionAPI:
         """Test ingestion without proper content type"""
         response = test_client.post(
             "/ingest",
-            data=json.dumps(sample_ingestion_data)
+            data=json.dumps(sample_ingestion_data),
             # No Content-Type header
         )
 
         # FastAPI should handle missing content-type gracefully
-        assert response.status_code in [200, 201, 400, 415, 422]  # 415 = Unsupported Media Type
+        assert response.status_code in [
+            200,
+            201,
+            400,
+            415,
+            422,
+        ]  # 415 = Unsupported Media Type
 
     def test_utf8_encoding(self, test_client):
         """Test handling of UTF-8 encoded data"""
@@ -222,9 +234,9 @@ class TestDataIngestionAPI:
                     "value": 23.5,
                     "timestamp": "2024-01-01T12:00:00Z",
                     "unit": "°C",
-                    "notes": "测试数据"
+                    "notes": "测试数据",
                 }
-            ]
+            ],
         }
 
         response = test_client.post("/ingest", json=unicode_data)
@@ -240,9 +252,9 @@ class TestDataIngestionAPI:
                 {
                     "metric_name": "temperature",
                     "value": 23.5,
-                    "timestamp": "invalid-timestamp"
+                    "timestamp": "invalid-timestamp",
                 }
-            ]
+            ],
         }
 
         response = test_client.post("/ingest", json=invalid_timestamp_data)
@@ -258,9 +270,9 @@ class TestDataIngestionAPI:
                 {
                     "metric_name": "temperature",
                     "value": "not-a-number",
-                    "timestamp": "2024-01-01T12:00:00Z"
+                    "timestamp": "2024-01-01T12:00:00Z",
                 }
-            ]
+            ],
         }
 
         response = test_client.post("/ingest", json=invalid_value_data)
@@ -278,7 +290,9 @@ class TestDataIngestionAPI:
 
         unique_statuses = set(responses)
         # Should see mix of success and rate-limited responses (if rate limiting implemented)
-        assert 200 in unique_statuses or 201 in unique_statuses or 401 in unique_statuses
+        assert (
+            200 in unique_statuses or 201 in unique_statuses or 401 in unique_statuses
+        )
 
     def test_error_response_format(self, test_client):
         """Test that error responses follow consistent format"""
@@ -305,7 +319,10 @@ class TestDataIngestionAPI:
             # Check for common CORS headers
             headers = response.headers
             # These might not be present depending on CORS configuration
-            cors_headers = ["access-control-allow-origin", "access-control-allow-methods"]
+            cors_headers = [
+                "access-control-allow-origin",
+                "access-control-allow-methods",
+            ]
             has_cors = any(header in headers for header in cors_headers)
             # Pass regardless of CORS implementation
             assert True
@@ -314,20 +331,19 @@ class TestDataIngestionAPI:
         """Test device authentication via headers"""
         headers = {
             "Authorization": "Bearer test-token",
-            "X-Device-ID": sample_ingestion_data["device_id"]
+            "X-Device-ID": sample_ingestion_data["device_id"],
         }
 
-        response = test_client.post("/ingest", json=sample_ingestion_data, headers=headers)
+        response = test_client.post(
+            "/ingest", json=sample_ingestion_data, headers=headers
+        )
 
         # Should handle authentication headers (may succeed or fail auth)
         assert response.status_code in [200, 201, 401, 403, 400, 422]
 
     def test_empty_data_array(self, test_client):
         """Test ingestion with empty data array"""
-        empty_data = {
-            "device_id": "test-device",
-            "data": []
-        }
+        empty_data = {"device_id": "test-device", "data": []}
 
         response = test_client.post("/ingest", json=empty_data)
 
@@ -342,9 +358,10 @@ class TestDataIngestionAPI:
                 {
                     "metric_name": "temperature",
                     "value": 23.5,
-                    "timestamp": "2024-01-01T12:00:00Z"
+                    "timestamp": "2024-01-01T12:00:00Z",
                 }
-            ] * 1000  # 1000 data points
+            ]
+            * 1000,  # 1000 data points
         }
 
         response = test_client.post("/ingest", json=large_data)
@@ -369,9 +386,9 @@ class TestDataIngestionAPI:
                 {
                     "metric_name": "large_value",
                     "value": large_value,
-                    "timestamp": "2024-01-01T12:00:00Z"
+                    "timestamp": "2024-01-01T12:00:00Z",
                 }
-            ]
+            ],
         }
 
         response = test_client.post("/ingest", json=large_data)

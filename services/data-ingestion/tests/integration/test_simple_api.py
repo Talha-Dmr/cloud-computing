@@ -2,27 +2,31 @@
 Simple API Integration Tests - without Kafka dependency
 """
 
-import pytest
-from fastapi.testclient import TestClient
 import json
-
+import os
 # Import the app directly to avoid startup issues
 import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+import pytest
+from fastapi.testclient import TestClient
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Create a simple test app without Kafka
 from fastapi import FastAPI
 
 app = FastAPI(title="IoT Data Ingestion Simple Test", version="1.0.0")
 
+
 @app.get("/")
 async def root():
     return {"status": "IoT Data Ingestion Simple Test"}
 
+
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
 
 @app.post("/ingest")
 async def ingest_data(data: dict):
@@ -37,8 +41,9 @@ async def ingest_data(data: dict):
         "success": True,
         "device_id": data["device_id"],
         "data_points": len(data["data"]),
-        "stored": True
+        "stored": True,
     }
+
 
 @app.get("/device/{device_id}")
 async def get_device_data(device_id: str):
@@ -49,9 +54,9 @@ async def get_device_data(device_id: str):
             {
                 "metric_name": "temperature",
                 "value": 23.5,
-                "timestamp": "2024-01-01T12:00:00Z"
+                "timestamp": "2024-01-01T12:00:00Z",
             }
-        ]
+        ],
     }
 
 
@@ -84,14 +89,14 @@ class TestSimpleAPI:
                     {
                         "metric_name": "temperature",
                         "value": 23.5,
-                        "timestamp": "2024-01-01T12:00:00Z"
+                        "timestamp": "2024-01-01T12:00:00Z",
                     },
                     {
                         "metric_name": "humidity",
                         "value": 65.2,
-                        "timestamp": "2024-01-01T12:00:00Z"
-                    }
-                ]
+                        "timestamp": "2024-01-01T12:00:00Z",
+                    },
+                ],
             }
 
             response = client.post("/ingest", json=test_data)
@@ -111,7 +116,7 @@ class TestSimpleAPI:
                     {
                         "metric_name": "temperature",
                         "value": 23.5,
-                        "timestamp": "2024-01-01T12:00:00Z"
+                        "timestamp": "2024-01-01T12:00:00Z",
                     }
                 ]
             }
@@ -126,10 +131,7 @@ class TestSimpleAPI:
     def test_ingest_data_validation_error_empty_data(self):
         """Test ingestion with empty data array"""
         with TestClient(app) as client:
-            invalid_data = {
-                "device_id": "test-device",
-                "data": []
-            }
+            invalid_data = {"device_id": "test-device", "data": []}
 
             response = client.post("/ingest", json=invalid_data)
             assert response.status_code == 200
@@ -186,10 +188,10 @@ class TestSimpleAPI:
                     {
                         "metric_name": f"metric_{i}",
                         "value": i * 1.5,
-                        "timestamp": f"2024-01-01T12:{i:02d}:00Z"
+                        "timestamp": f"2024-01-01T12:{i:02d}:00Z",
                     }
                     for i in range(100)  # 100 data points
-                ]
+                ],
             }
 
             response = client.post("/ingest", json=large_data)
@@ -209,9 +211,9 @@ class TestSimpleAPI:
                         "metric_name": "sıcaklık",
                         "value": 23.5,
                         "timestamp": "2024-01-01T12:00:00Z",
-                        "notes": "测试数据"
+                        "notes": "测试数据",
                     }
-                ]
+                ],
             }
 
             response = client.post("/ingest", json=unicode_data)

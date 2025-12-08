@@ -1,9 +1,10 @@
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 import jwt
-from passlib.context import CryptContext
 import structlog
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
 from ..config import settings
 
@@ -11,6 +12,7 @@ logger = structlog.get_logger()
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 class AuthService:
     def __init__(self, db: Session):
@@ -25,9 +27,7 @@ class AuthService:
         return pwd_context.hash(password)
 
     def create_access_token(
-        self,
-        data: Dict[str, Any],
-        expires_delta: Optional[timedelta] = None
+        self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None
     ) -> str:
         """Create a JWT access token"""
         to_encode = data.copy()
@@ -41,36 +41,27 @@ class AuthService:
 
         to_encode.update({"exp": expire, "iat": datetime.utcnow()})
         encoded_jwt = jwt.encode(
-            to_encode,
-            settings.jwt_secret_key,
-            algorithm=settings.jwt_algorithm
+            to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
         )
 
         return encoded_jwt
 
     def create_device_token(self, device_id: str) -> str:
         """Create a JWT token for device authentication"""
-        data = {
-            "sub": device_id,
-            "type": "device",
-            "scope": "device:auth"
-        }
+        data = {"sub": device_id, "type": "device", "scope": "device:auth"}
 
         expires_delta = timedelta(days=365)  # Device tokens last longer
         return self.create_access_token(data, expires_delta)
 
     def create_user_token(
-        self,
-        user_id: str,
-        email: str,
-        scopes: list = ["read", "write"]
+        self, user_id: str, email: str, scopes: list = ["read", "write"]
     ) -> str:
         """Create a JWT token for user authentication"""
         data = {
             "sub": user_id,
             "email": email,
             "type": "user",
-            "scope": " ".join(scopes)
+            "scope": " ".join(scopes),
         }
 
         return self.create_access_token(data)
@@ -79,9 +70,7 @@ class AuthService:
         """Verify and decode JWT token"""
         try:
             payload = jwt.decode(
-                token,
-                settings.jwt_secret_key,
-                algorithms=[settings.jwt_algorithm]
+                token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
             )
 
             # Check if token has expired
@@ -98,7 +87,7 @@ class AuthService:
             logger.info(
                 "Token verified successfully",
                 subject=payload.get("sub"),
-                token_type=payload.get("type")
+                token_type=payload.get("type"),
             )
 
             return payload
@@ -111,9 +100,7 @@ class AuthService:
             return None
 
     async def get_current_user(
-        self,
-        token: str,
-        required_scope: Optional[str] = None
+        self, token: str, required_scope: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """Get current user from token with optional scope validation"""
         payload = await self.verify_token(token)
@@ -127,7 +114,7 @@ class AuthService:
                 logger.warning(
                     "Insufficient token scope",
                     required=required_scope,
-                    provided=token_scopes
+                    provided=token_scopes,
                 )
                 return None
 

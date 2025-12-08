@@ -1,10 +1,12 @@
-from sqlalchemy import Column, String, DateTime, Text, Boolean, Enum
+import uuid
+from enum import Enum as PyEnum
+
+from sqlalchemy import Boolean, Column, DateTime, Enum, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-from enum import Enum as PyEnum
-import uuid
 
 from ..database import Base
+
 
 class DeviceStatus(PyEnum):
     ACTIVE = "active"
@@ -12,11 +14,13 @@ class DeviceStatus(PyEnum):
     MAINTENANCE = "maintenance"
     DECOMMISSIONED = "decommissioned"
 
+
 class DeviceType(PyEnum):
     SENSOR = "sensor"
     ACTUATOR = "actuator"
     GATEWAY = "gateway"
     CONTROLLER = "controller"
+
 
 class Device(Base):
     __tablename__ = "devices"
@@ -56,6 +60,7 @@ class Device(Base):
     is_healthy = Column(Boolean, default=True)
     health_check_interval = Column(String(20), default="300")  # seconds
     last_health_check = Column(DateTime(timezone=True))
+
 
 class DeviceMetrics(Base):
     __tablename__ = "device_metrics"

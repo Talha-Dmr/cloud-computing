@@ -1,19 +1,20 @@
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from typing import List, Optional
-import structlog
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
-from fastapi import Response
 import time
+from typing import List, Optional
 
-from .database import get_db, engine
+import structlog
+from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Histogram,
+                               generate_latest)
+from sqlalchemy.orm import Session
+
+from .config import settings
+from .database import engine, get_db
 from .models import device as device_models
 from .schemas import device as device_schemas
-from .services.device_service import DeviceService
 from .services.auth_service import AuthService
-from .config import settings
+from .services.device_service import DeviceService
 
 # Database tables
 device_models.Base.metadata.create_all(bind=engine)
@@ -42,16 +43,17 @@ security = HTTPBearer()
 
 # Prometheus metrics
 REQUEST_COUNT = Counter(
-    'device_registry_requests_total',
-    'Total number of requests',
-    ['method', 'endpoint', 'status']
+    "device_registry_requests_total",
+    "Total number of requests",
+    ["method", "endpoint", "status"],
 )
 
 REQUEST_DURATION = Histogram(
-    'device_registry_request_duration_seconds',
-    'Request duration in seconds',
-    ['method', 'endpoint']
+    "device_registry_request_duration_seconds",
+    "Request duration in seconds",
+    ["method", "endpoint"],
 )
+
 
 @app.middleware("http")
 async def metrics_middleware(request, call_next):
@@ -60,26 +62,25 @@ async def metrics_middleware(request, call_next):
 
     # Record metrics
     REQUEST_COUNT.labels(
-        method=request.method,
-        endpoint=request.url.path,
-        status=response.status_code
+        method=request.method, endpoint=request.url.path, status=response.status_code
     ).inc()
 
-    REQUEST_DURATION.labels(
-        method=request.method,
-        endpoint=request.url.path
-    ).observe(time.time() - start_time)
+    REQUEST_DURATION.labels(method=request.method, endpoint=request.url.path).observe(
+        time.time() - start_time
+    )
 
     return response
+
 
 @app.get("/metrics")
 async def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
+
 # Dependency for authentication
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     auth_service = AuthService(db)
     user = await auth_service.verify_token(credentials.credentials)
@@ -91,20 +92,24 @@ async def get_current_user(
         )
     return user
 
+
 @app.get("/", tags=["Health"])
 async def root():
     """Health check endpoint"""
     return {"status": "healthy", "service": "device-registry"}
 
+
 @app.post("/devices", response_model=device_schemas.Device, tags=["Devices"])
 async def create_device(
     device: device_schemas.DeviceCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """Register a new IoT device"""
     device_service = DeviceService(db)
-    logger.info("Creating device", device_id=device.device_id, user_id=current_user["sub"])
+    logger.info(
+        "Creating device", device_id=device.device_id, user_id=current_user["sub"]
+    )
 
     try:
         db_device = await device_service.create_device(device, current_user["sub"])
@@ -112,29 +117,28 @@ async def create_device(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @app.get("/devices", response_model=List[device_schemas.Device], tags=["Devices"])
 async def list_devices(
     skip: int = 0,
     limit: int = 100,
     status: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """List all devices for the authenticated user"""
     device_service = DeviceService(db)
     devices = await device_service.list_devices(
-        user_id=current_user["sub"],
-        skip=skip,
-        limit=limit,
-        status=status
+        user_id=current_user["sub"], skip=skip, limit=limit, status=status
     )
     return devices
+
 
 @app.get("/devices/{device_id}", response_model=device_schemas.Device, tags=["Devices"])
 async def get_device(
     device_id: str,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """Get device details by ID"""
     device_service = DeviceService(db)
@@ -143,12 +147,13 @@ async def get_device(
         raise HTTPException(status_code=404, detail="Device not found")
     return device
 
+
 @app.put("/devices/{device_id}", response_model=device_schemas.Device, tags=["Devices"])
 async def update_device(
     device_id: str,
     device_update: device_schemas.DeviceUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """Update device information"""
     device_service = DeviceService(db)
@@ -164,11 +169,12 @@ async def update_device(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @app.delete("/devices/{device_id}", tags=["Devices"])
 async def delete_device(
     device_id: str,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """Delete a device"""
     device_service = DeviceService(db)
@@ -179,28 +185,28 @@ async def delete_device(
         raise HTTPException(status_code=404, detail="Device not found")
     return {"message": "Device deleted successfully"}
 
-@app.post("/devices/{device_id}/authenticate", response_model=device_schemas.DeviceAuth, tags=["Devices"])
+
+@app.post(
+    "/devices/{device_id}/authenticate",
+    response_model=device_schemas.DeviceAuth,
+    tags=["Devices"],
+)
 async def authenticate_device(
     device_id: str,
     auth_data: device_schemas.DeviceAuthRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Authenticate a device and return JWT token"""
     device_service = DeviceService(db)
 
     try:
-        token = await device_service.authenticate_device(
-            device_id, auth_data.api_key
-        )
+        token = await device_service.authenticate_device(device_id, auth_data.api_key)
         return {"access_token": token, "token_type": "bearer"}
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
 
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8001,
-        reload=settings.debug
-    )
+
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8001, reload=settings.debug)

@@ -1,14 +1,16 @@
-from typing import Dict, Any, Callable, Optional
 import asyncio
 import json
-import structlog
 from datetime import datetime
+from typing import Any, Callable, Dict, Optional
+
 import paho.mqtt.client as mqtt
+import structlog
 
 from ..config import settings
 from .ingestion_service import DataIngestionService
 
 logger = structlog.get_logger()
+
 
 class MQTTService:
     def __init__(self):
@@ -31,16 +33,11 @@ class MQTTService:
             # Set username/password if provided
             if settings.mqtt_username and settings.mqtt_password:
                 self.client.username_pw_set(
-                    settings.mqtt_username,
-                    settings.mqtt_password
+                    settings.mqtt_username, settings.mqtt_password
                 )
 
             # Connect to broker
-            self.client.connect(
-                settings.mqtt_host,
-                settings.mqtt_port,
-                60
-            )
+            self.client.connect(settings.mqtt_host, settings.mqtt_port, 60)
 
             # Start the network loop in a separate thread
             self.client.loop_start()
@@ -55,16 +52,11 @@ class MQTTService:
                 raise Exception("Failed to connect to MQTT broker")
 
             logger.info(
-                "MQTT service started",
-                host=settings.mqtt_host,
-                port=settings.mqtt_port
+                "MQTT service started", host=settings.mqtt_host, port=settings.mqtt_port
             )
 
         except Exception as e:
-            logger.error(
-                "Failed to start MQTT service",
-                error=str(e)
-            )
+            logger.error("Failed to start MQTT service", error=str(e))
             raise
 
     async def stop(self):
@@ -90,20 +82,14 @@ class MQTTService:
 
         else:
             self.is_connected = False
-            logger.error(
-                "Failed to connect to MQTT broker",
-                return_code=rc
-            )
+            logger.error("Failed to connect to MQTT broker", return_code=rc)
 
     def _on_disconnect(self, client, userdata, rc):
         """
         MQTT disconnect callback
         """
         self.is_connected = False
-        logger.warning(
-            "Disconnected from MQTT broker",
-            return_code=rc
-        )
+        logger.warning("Disconnected from MQTT broker", return_code=rc)
 
     def _on_message(self, client, userdata, msg):
         """
@@ -111,16 +97,14 @@ class MQTTService:
         """
         try:
             topic = msg.topic
-            payload = msg.payload.decode('utf-8')
+            payload = msg.payload.decode("utf-8")
 
             logger.debug(
-                "Received MQTT message",
-                topic=topic,
-                payload_length=len(payload)
+                "Received MQTT message", topic=topic, payload_length=len(payload)
             )
 
             # Parse topic to extract device information
-            topic_parts = topic.split('/')
+            topic_parts = topic.split("/")
             device_id = None
 
             # Expected topic format: iot/{device_id}/data or iot/{device_id}/health
@@ -130,24 +114,16 @@ class MQTTService:
 
                 # Handle different message types
                 asyncio.create_task(
-                    self._handle_mqtt_message(
-                        device_id,
-                        message_type,
-                        payload
-                    )
+                    self._handle_mqtt_message(device_id, message_type, payload)
                 )
 
             # Call custom handler if registered
             if topic in self.message_handlers:
-                asyncio.create_task(
-                    self.message_handlers[topic](topic, payload)
-                )
+                asyncio.create_task(self.message_handlers[topic](topic, payload))
 
         except Exception as e:
             logger.error(
-                "Failed to process MQTT message",
-                topic=msg.topic,
-                error=str(e)
+                "Failed to process MQTT message", topic=msg.topic, error=str(e)
             )
 
     def _subscribe_to_default_topics(self):
@@ -155,24 +131,18 @@ class MQTTService:
         Subscribe to default MQTT topics
         """
         default_topics = [
-            "iot/+/data",      # Device data
-            "iot/+/health",    # Device health
-            "iot/+/status",    # Device status
-            "iot/+/alert",     # Device alerts
+            "iot/+/data",  # Device data
+            "iot/+/health",  # Device health
+            "iot/+/status",  # Device status
+            "iot/+/alert",  # Device alerts
         ]
 
         for topic in default_topics:
             self.client.subscribe(topic)
-            logger.debug(
-                "Subscribed to MQTT topic",
-                topic=topic
-            )
+            logger.debug("Subscribed to MQTT topic", topic=topic)
 
     async def _handle_mqtt_message(
-        self,
-        device_id: str,
-        message_type: str,
-        payload: str
+        self, device_id: str, message_type: str, payload: str
     ):
         """
         Handle incoming MQTT message based on type
@@ -193,7 +163,7 @@ class MQTTService:
                 logger.warning(
                     "Unknown MQTT message type",
                     device_id=device_id,
-                    message_type=message_type
+                    message_type=message_type,
                 )
 
         except json.JSONDecodeError:
@@ -201,14 +171,14 @@ class MQTTService:
                 "Invalid JSON in MQTT message",
                 device_id=device_id,
                 message_type=message_type,
-                payload=payload[:100]
+                payload=payload[:100],
             )
         except Exception as e:
             logger.error(
                 "Failed to handle MQTT message",
                 device_id=device_id,
                 message_type=message_type,
-                error=str(e)
+                error=str(e),
             )
 
     async def _handle_data_message(self, device_id: str, data: Dict[str, Any]):
@@ -218,7 +188,7 @@ class MQTTService:
         if not self.ingestion_service:
             logger.warning(
                 "Ingestion service not available for MQTT data message",
-                device_id=device_id
+                device_id=device_id,
             )
             return
 
@@ -230,7 +200,7 @@ class MQTTService:
                 "batch_id": data.get("batch_id"),
                 "location": data.get("location"),
                 "firmware_version": data.get("firmware_version"),
-                "battery_level": data.get("battery_level")
+                "battery_level": data.get("battery_level"),
             }
 
             # Get device info (simplified - in real implementation,
@@ -238,22 +208,17 @@ class MQTTService:
             device_info = {"device_id": device_id, "device_type": "sensor"}
 
             # Process data
-            await self.ingestion_service.process_data(
-                ingestion_request,
-                device_info
-            )
+            await self.ingestion_service.process_data(ingestion_request, device_info)
 
             logger.info(
                 "MQTT data message processed",
                 device_id=device_id,
-                data_points=len(ingestion_request.get("data", []))
+                data_points=len(ingestion_request.get("data", [])),
             )
 
         except Exception as e:
             logger.error(
-                "Failed to process MQTT data message",
-                device_id=device_id,
-                error=str(e)
+                "Failed to process MQTT data message", device_id=device_id, error=str(e)
             )
 
     async def _handle_health_message(self, device_id: str, data: Dict[str, Any]):
@@ -268,22 +233,20 @@ class MQTTService:
             message = data.get("message")
 
             await self.ingestion_service.update_device_health(
-                device_id,
-                is_healthy,
-                message
+                device_id, is_healthy, message
             )
 
             logger.info(
                 "MQTT health message processed",
                 device_id=device_id,
-                is_healthy=is_healthy
+                is_healthy=is_healthy,
             )
 
         except Exception as e:
             logger.error(
                 "Failed to process MQTT health message",
                 device_id=device_id,
-                error=str(e)
+                error=str(e),
             )
 
     async def _handle_status_message(self, device_id: str, data: Dict[str, Any]):
@@ -307,20 +270,20 @@ class MQTTService:
                 "device_id": device_id,
                 "alert": data,
                 "source": "mqtt",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
             logger.info(
                 "MQTT alert message received",
                 device_id=device_id,
-                alert_type=data.get("type", "unknown")
+                alert_type=data.get("type", "unknown"),
             )
 
         except Exception as e:
             logger.error(
                 "Failed to process MQTT alert message",
                 device_id=device_id,
-                error=str(e)
+                error=str(e),
             )
 
     def subscribe(self, topic: str, handler: Callable):
@@ -330,20 +293,14 @@ class MQTTService:
         if self.client:
             self.client.subscribe(topic)
             self.message_handlers[topic] = handler
-            logger.info(
-                "Subscribed to custom MQTT topic",
-                topic=topic
-            )
+            logger.info("Subscribed to custom MQTT topic", topic=topic)
 
     def publish(self, topic: str, payload: Dict[str, Any]):
         """
         Publish message to MQTT topic
         """
         if not self.client or not self.is_connected:
-            logger.error(
-                "Cannot publish - MQTT not connected",
-                topic=topic
-            )
+            logger.error("Cannot publish - MQTT not connected", topic=topic)
             return False
 
         try:
@@ -352,25 +309,17 @@ class MQTTService:
 
             if result.rc == 0:
                 logger.debug(
-                    "MQTT message published",
-                    topic=topic,
-                    message_id=result.mid
+                    "MQTT message published", topic=topic, message_id=result.mid
                 )
                 return True
             else:
                 logger.error(
-                    "Failed to publish MQTT message",
-                    topic=topic,
-                    return_code=result.rc
+                    "Failed to publish MQTT message", topic=topic, return_code=result.rc
                 )
                 return False
 
         except Exception as e:
-            logger.error(
-                "Error publishing MQTT message",
-                topic=topic,
-                error=str(e)
-            )
+            logger.error("Error publishing MQTT message", topic=topic, error=str(e))
             return False
 
     def set_ingestion_service(self, ingestion_service: DataIngestionService):

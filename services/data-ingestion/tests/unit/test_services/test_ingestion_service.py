@@ -2,11 +2,11 @@
 Unit Tests for Ingestion Service Business Logic
 """
 
-import pytest
 import json
 from datetime import datetime
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
 from app.services.ingestion_service import DataIngestionService
 
 
@@ -41,20 +41,23 @@ class TestDataIngestionService:
         mock_redis_service = Mock()
 
         return DataIngestionService(
-            kafka_producer=mock_kafka_service,
-            redis_service=mock_redis_service
+            kafka_producer=mock_kafka_service, redis_service=mock_redis_service
         )
 
     @pytest.mark.asyncio
     async def test_ingest_single_data_point_success(
-        self, ingestion_service, mock_device_registry, mock_kafka_producer, sample_ingestion_data
+        self,
+        ingestion_service,
+        mock_device_registry,
+        mock_kafka_producer,
+        sample_ingestion_data,
     ):
         """Test successful single data point ingestion"""
         # Mock device authentication success
         mock_device_registry.authenticate_device.return_value = {
             "device_id": sample_ingestion_data["device_id"],
             "authenticated": True,
-            "status": "active"
+            "status": "active",
         }
 
         # Mock device info
@@ -62,14 +65,14 @@ class TestDataIngestionService:
             "device_id": sample_ingestion_data["device_id"],
             "name": "Test Sensor",
             "type": "sensor",
-            "location": {"latitude": 40.7128, "longitude": -74.0060}
+            "location": {"latitude": 40.7128, "longitude": -74.0060},
         }
 
         # Test ingestion
         result = await ingestion_service.ingest_data(
             device_id=sample_ingestion_data["device_id"],
             data=sample_ingestion_data["data"],
-            auth_token="valid-token"
+            auth_token="valid-token",
         )
 
         assert result["success"] is True
@@ -87,7 +90,9 @@ class TestDataIngestionService:
         )
 
         # Verify Kafka producer was called for each data point
-        assert mock_kafka_producer.send_and_wait.call_count == len(sample_ingestion_data["data"])
+        assert mock_kafka_producer.send_and_wait.call_count == len(
+            sample_ingestion_data["data"]
+        )
 
     @pytest.mark.asyncio
     async def test_ingest_data_device_authentication_failure(
@@ -98,14 +103,14 @@ class TestDataIngestionService:
         mock_device_registry.authenticate_device.return_value = {
             "device_id": sample_ingestion_data["device_id"],
             "authenticated": False,
-            "error": "Invalid credentials"
+            "error": "Invalid credentials",
         }
 
         # Test ingestion should fail
         result = await ingestion_service.ingest_data(
             device_id=sample_ingestion_data["device_id"],
             data=sample_ingestion_data["data"],
-            auth_token="invalid-token"
+            auth_token="invalid-token",
         )
 
         assert result["success"] is False
@@ -121,7 +126,7 @@ class TestDataIngestionService:
         mock_device_registry.authenticate_device.return_value = {
             "device_id": sample_ingestion_data["device_id"],
             "authenticated": True,
-            "status": "active"
+            "status": "active",
         }
         mock_device_registry.get_device_info.return_value = None
 
@@ -129,7 +134,7 @@ class TestDataIngestionService:
         result = await ingestion_service.ingest_data(
             device_id=sample_ingestion_data["device_id"],
             data=sample_ingestion_data["data"],
-            auth_token="valid-token"
+            auth_token="valid-token",
         )
 
         assert result["success"] is False
@@ -137,23 +142,26 @@ class TestDataIngestionService:
 
     @pytest.mark.asyncio
     async def test_ingest_batch_data_success(
-        self, ingestion_service, mock_device_registry, mock_kafka_producer, batch_ingestion_data
+        self,
+        ingestion_service,
+        mock_device_registry,
+        mock_kafka_producer,
+        batch_ingestion_data,
     ):
         """Test successful batch data ingestion"""
         # Mock device authentication success for all devices
         mock_device_registry.authenticate_device.return_value = {
             "authenticated": True,
-            "status": "active"
+            "status": "active",
         }
         mock_device_registry.get_device_info.return_value = {
             "type": "sensor",
-            "location": {"latitude": 40.7128, "longitude": -74.0060}
+            "location": {"latitude": 40.7128, "longitude": -74.0060},
         }
 
         # Test batch ingestion
         result = await ingestion_service.ingest_batch_data(
-            batch_data=batch_ingestion_data,
-            auth_token="valid-token"
+            batch_data=batch_ingestion_data, auth_token="valid-token"
         )
 
         assert result["success"] is True
@@ -169,13 +177,17 @@ class TestDataIngestionService:
     ):
         """Test ingestion with invalid data structure"""
         invalid_data = [
-            {"metric_name": "", "value": 25.0, "timestamp": "2024-01-01T12:00:00Z"}  # Empty metric name
+            {
+                "metric_name": "",
+                "value": 25.0,
+                "timestamp": "2024-01-01T12:00:00Z",
+            }  # Empty metric name
         ]
 
         result = await ingestion_service.ingest_data(
             device_id=sample_ingestion_data["device_id"],
             data=invalid_data,
-            auth_token="valid-token"
+            auth_token="valid-token",
         )
 
         assert result["success"] is False
@@ -183,28 +195,36 @@ class TestDataIngestionService:
 
     @pytest.mark.asyncio
     async def test_ingest_data_enrichment(
-        self, ingestion_service, mock_device_registry, mock_kafka_producer, sample_ingestion_data
+        self,
+        ingestion_service,
+        mock_device_registry,
+        mock_kafka_producer,
+        sample_ingestion_data,
     ):
         """Test that data is properly enriched with device info"""
         # Mock device authentication and info
         mock_device_registry.authenticate_device.return_value = {
             "device_id": sample_ingestion_data["device_id"],
             "authenticated": True,
-            "status": "active"
+            "status": "active",
         }
         mock_device_registry.get_device_info.return_value = {
             "device_id": sample_ingestion_data["device_id"],
             "name": "Temperature Sensor 001",
             "type": "sensor",
-            "location": {"latitude": 40.7128, "longitude": -74.0060, "room": "Server Room A"},
-            "metadata": {"sensor_type": "DHT22", "calibration_date": "2024-01-01"}
+            "location": {
+                "latitude": 40.7128,
+                "longitude": -74.0060,
+                "room": "Server Room A",
+            },
+            "metadata": {"sensor_type": "DHT22", "calibration_date": "2024-01-01"},
         }
 
         # Test ingestion
         await ingestion_service.ingest_data(
             device_id=sample_ingestion_data["device_id"],
             data=sample_ingestion_data["data"],
-            auth_token="valid-token"
+            auth_token="valid-token",
         )
 
         # Verify enriched data was sent to Kafka
@@ -221,28 +241,34 @@ class TestDataIngestionService:
 
     @pytest.mark.asyncio
     async def test_ingest_data_kafka_failure(
-        self, ingestion_service, mock_device_registry, mock_kafka_producer, sample_ingestion_data
+        self,
+        ingestion_service,
+        mock_device_registry,
+        mock_kafka_producer,
+        sample_ingestion_data,
     ):
         """Test handling of Kafka producer failure"""
         # Mock device authentication success
         mock_device_registry.authenticate_device.return_value = {
             "device_id": sample_ingestion_data["device_id"],
             "authenticated": True,
-            "status": "active"
+            "status": "active",
         }
         mock_device_registry.get_device_info.return_value = {
             "device_id": sample_ingestion_data["device_id"],
-            "type": "sensor"
+            "type": "sensor",
         }
 
         # Mock Kafka failure
-        mock_kafka_producer.send_and_wait.side_effect = Exception("Kafka connection failed")
+        mock_kafka_producer.send_and_wait.side_effect = Exception(
+            "Kafka connection failed"
+        )
 
         # Test ingestion should handle Kafka failure gracefully
         result = await ingestion_service.ingest_data(
             device_id=sample_ingestion_data["device_id"],
             data=sample_ingestion_data["data"],
-            auth_token="valid-token"
+            auth_token="valid-token",
         )
 
         assert result["success"] is False
@@ -251,7 +277,11 @@ class TestDataIngestionService:
 
     @pytest.mark.asyncio
     async def test_ingest_data_with_alerts(
-        self, ingestion_service, mock_device_registry, mock_kafka_producer, sample_ingestion_data
+        self,
+        ingestion_service,
+        mock_device_registry,
+        mock_kafka_producer,
+        sample_ingestion_data,
     ):
         """Test ingestion with alert generation"""
         # Create data that should trigger alerts
@@ -259,35 +289,35 @@ class TestDataIngestionService:
             {
                 "metric_name": "temperature",
                 "value": 95.0,  # High temperature alert
-                "timestamp": "2024-01-01T12:00:00Z"
+                "timestamp": "2024-01-01T12:00:00Z",
             },
             {
                 "metric_name": "humidity",
                 "value": 15.0,  # Low humidity alert
-                "timestamp": "2024-01-01T12:00:00Z"
-            }
+                "timestamp": "2024-01-01T12:00:00Z",
+            },
         ]
 
         # Mock device authentication and info with alert thresholds
         mock_device_registry.authenticate_device.return_value = {
             "device_id": sample_ingestion_data["device_id"],
             "authenticated": True,
-            "status": "active"
+            "status": "active",
         }
         mock_device_registry.get_device_info.return_value = {
             "device_id": sample_ingestion_data["device_id"],
             "type": "sensor",
             "alert_thresholds": {
                 "temperature": {"max": 80.0, "min": 0.0},
-                "humidity": {"max": 100.0, "min": 30.0}
-            }
+                "humidity": {"max": 100.0, "min": 30.0},
+            },
         }
 
         # Test ingestion with alert generation
         result = await ingestion_service.ingest_data(
             device_id=sample_ingestion_data["device_id"],
             data=alert_data,
-            auth_token="valid-token"
+            auth_token="valid-token",
         )
 
         assert result["success"] is True
@@ -295,7 +325,8 @@ class TestDataIngestionService:
 
         # Verify alert messages were sent to Kafka
         alert_calls = [
-            call for call in mock_kafka_producer.send_and_wait.call_args_list
+            call
+            for call in mock_kafka_producer.send_and_wait.call_args_list
             if call[0][0] == "iot-alerts"  # Alert topic
         ]
         assert len(alert_calls) == 2
@@ -313,7 +344,7 @@ class TestDataIngestionService:
             "last_ingestion": "2024-01-01T12:00:00Z",
             "avg_ingestion_rate": "2.5",
             "total_errors": "3",
-            "last_error": "Invalid data format"
+            "last_error": "Invalid data format",
         }
 
         stats = await ingestion_service.get_device_statistics(device_id)
@@ -341,14 +372,17 @@ class TestDataIngestionService:
         mock_redis.hset.return_value = True
 
         await ingestion_service.update_device_statistics(
-            device_id=device_id,
-            data_points_count=5,
-            success=True
+            device_id=device_id, data_points_count=5, success=True
         )
 
         # Verify Redis was called to update statistics
-        mock_redis.incr.assert_called_with(f"device_stats:{device_id}:total_ingested", 5)
-        mock_redis.set.assert_called_with(f"device_stats:{device_id}:last_ingestion", pytest.approx(datetime.utcnow().timestamp(), rel=1e6))
+        mock_redis.incr.assert_called_with(
+            f"device_stats:{device_id}:total_ingested", 5
+        )
+        mock_redis.set.assert_called_with(
+            f"device_stats:{device_id}:last_ingestion",
+            pytest.approx(datetime.utcnow().timestamp(), rel=1e6),
+        )
 
     @pytest.mark.asyncio
     async def test_process_data_point_transformation(
@@ -359,7 +393,7 @@ class TestDataIngestionService:
         raw_data_point = {
             "metric_name": "temperature",
             "value": 23.5,
-            "timestamp": "2024-01-01T12:00:00Z"
+            "timestamp": "2024-01-01T12:00:00Z",
         }
 
         device_info = {
@@ -367,7 +401,7 @@ class TestDataIngestionService:
             "name": "Temperature Sensor",
             "type": "sensor",
             "location": {"latitude": 40.7128, "longitude": -74.0060},
-            "metadata": {"sensor_type": "DHT22"}
+            "metadata": {"sensor_type": "DHT22"},
         }
 
         # Test data transformation
@@ -390,7 +424,7 @@ class TestDataIngestionService:
         valid_data_point = {
             "metric_name": "temperature",
             "value": 23.5,
-            "timestamp": "2024-01-01T12:00:00Z"
+            "timestamp": "2024-01-01T12:00:00Z",
         }
 
         # Test valid data point
@@ -401,7 +435,7 @@ class TestDataIngestionService:
         # Test invalid data point (missing fields)
         invalid_data_point = {
             "metric_name": "temperature",
-            "value": 23.5
+            "value": 23.5,
             # Missing timestamp
         }
 
@@ -413,7 +447,7 @@ class TestDataIngestionService:
         invalid_timestamp_data = {
             "metric_name": "temperature",
             "value": 23.5,
-            "timestamp": "invalid-timestamp"
+            "timestamp": "invalid-timestamp",
         }
 
         is_valid, error = ingestion_service._validate_data_point(invalid_timestamp_data)
@@ -421,9 +455,7 @@ class TestDataIngestionService:
         assert "Invalid timestamp format" in error
 
     @pytest.mark.asyncio
-    async def test_get_ingestion_health_status(
-        self, ingestion_service, mock_redis
-    ):
+    async def test_get_ingestion_health_status(self, ingestion_service, mock_redis):
         """Test getting ingestion service health status"""
         # Mock Redis health data
         mock_redis.ping.return_value = True
@@ -433,10 +465,12 @@ class TestDataIngestionService:
         mock_kafka_health = {
             "connected": True,
             "bootstrap_servers": ["localhost:9092"],
-            "topic_count": 5
+            "topic_count": 5,
         }
 
-        with patch.object(ingestion_service, '_check_kafka_health', return_value=mock_kafka_health):
+        with patch.object(
+            ingestion_service, "_check_kafka_health", return_value=mock_kafka_health
+        ):
             health_status = await ingestion_service.get_health_status()
 
         assert health_status["status"] == "healthy"
@@ -445,14 +479,12 @@ class TestDataIngestionService:
         assert "uptime" in health_status
 
     @pytest.mark.asyncio
-    async def test_cleanup_old_device_data(
-        self, ingestion_service, mock_redis
-    ):
+    async def test_cleanup_old_device_data(self, ingestion_service, mock_redis):
         """Test cleanup of old device data"""
         # Mock Redis operations for cleanup
         mock_redis.scan_iter.return_value = [
             b"device_stats:old-device-001",
-            b"device_stats:old-device-002"
+            b"device_stats:old-device-002",
         ]
         mock_redis.delete.return_value = 2
 
@@ -464,6 +496,5 @@ class TestDataIngestionService:
         # Verify Redis operations
         mock_redis.scan_iter.assert_called()
         mock_redis.delete.assert_called_with(
-            "device_stats:old-device-001",
-            "device_stats:old-device-002"
+            "device_stats:old-device-001", "device_stats:old-device-002"
         )

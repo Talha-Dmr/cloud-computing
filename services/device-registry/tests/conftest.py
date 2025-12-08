@@ -3,18 +3,17 @@ Device Registry Test Configuration
 Provides shared fixtures for device registry tests
 """
 
-import pytest
 import asyncio
+
+import pytest
 import redis
+from app.core.config import settings
+from app.database import Base, get_db
+from app.main import app
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
-
-from app.main import app
-from app.database import get_db, Base
-from app.core.config import settings
-
 
 # Test Database Configuration
 TEST_DATABASE_URL = "postgresql://iot_user:iot_password@localhost:5433/iot_test_db"
@@ -36,7 +35,7 @@ def test_engine():
         TEST_DATABASE_URL,
         poolclass=StaticPool,
         connect_args={"check_same_thread": False},
-        echo=False
+        echo=False,
     )
 
     # Create all tables
@@ -50,7 +49,9 @@ def test_engine():
 @pytest.fixture
 def test_db_session(test_engine):
     """Create test database session"""
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    TestingSessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=test_engine
+    )
 
     # Create connection and transaction
     connection = test_engine.connect()
@@ -85,6 +86,7 @@ def test_redis():
 @pytest.fixture
 def test_client(test_db_session):
     """Create test client with database dependency override"""
+
     def override_get_db():
         try:
             yield test_db_session
@@ -113,14 +115,14 @@ def sample_device_data():
         "location": {
             "latitude": 40.7128,
             "longitude": -74.0060,
-            "address": "123 Test St, Test City, NY 10001"
+            "address": "123 Test St, Test City, NY 10001",
         },
         "metadata": {
             "sensor_type": "temperature",
             "range": {"min": -40, "max": 125},
             "accuracy": 0.5,
-            "unit": "celsius"
-        }
+            "unit": "celsius",
+        },
     }
 
 
@@ -134,9 +136,7 @@ def sample_device_token():
 @pytest.fixture
 def authenticated_client(test_client, sample_device_token):
     """Create authenticated test client"""
-    test_client.headers.update({
-        "Authorization": f"Bearer {sample_device_token}"
-    })
+    test_client.headers.update({"Authorization": f"Bearer {sample_device_token}"})
     return test_client
 
 
@@ -154,14 +154,14 @@ def multiple_devices_data():
             "location": {
                 "latitude": 40.7128 + (i * 0.01),
                 "longitude": -74.0060 + (i * 0.01),
-                "address": f"{i} Test St, Test City, NY 1000{i}"
+                "address": f"{i} Test St, Test City, NY 1000{i}",
             },
             "metadata": {
                 "sensor_type": "temperature" if i % 2 == 0 else "humidity",
                 "range": {"min": -40, "max": 125},
                 "accuracy": 0.5 + (i * 0.1),
-                "unit": "celsius" if i % 2 == 0 else "percent"
-            }
+                "unit": "celsius" if i % 2 == 0 else "percent",
+            },
         }
         for i in range(1, 6)  # 5 devices
     ]
@@ -174,46 +174,39 @@ def invalid_device_data():
         {
             # Missing required device_id
             "name": "Invalid Device",
-            "device_type": "sensor"
+            "device_type": "sensor",
         },
         {
             "device_id": "",  # Empty device_id
             "name": "Invalid Device",
-            "device_type": "sensor"
+            "device_type": "sensor",
         },
         {
             "device_id": "device@invalid",  # Invalid characters
             "name": "Invalid Device",
-            "device_type": "sensor"
+            "device_type": "sensor",
         },
         {
             "device_id": "valid-id",
             "name": "Invalid Device",
-            "device_type": "invalid_type"  # Invalid device type
-        }
+            "device_type": "invalid_type",  # Invalid device type
+        },
     ]
 
 
 # Pytest configuration
 def pytest_configure(config):
     """Configure pytest with custom markers"""
-    config.addinivalue_line(
-        "markers", "unit: Mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "integration: Mark test as an integration test"
-    )
-    config.addinivalue_line(
-        "markers", "e2e: Mark test as an end-to-end test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: Mark test as slow running"
-    )
+    config.addinivalue_line("markers", "unit: Mark test as a unit test")
+    config.addinivalue_line("markers", "integration: Mark test as an integration test")
+    config.addinivalue_line("markers", "e2e: Mark test as an end-to-end test")
+    config.addinivalue_line("markers", "slow: Mark test as slow running")
 
 
 @pytest.fixture
 def mock_kafka_producer(monkeypatch):
     """Mock Kafka producer for testing"""
+
     class MockProducer:
         async def send(self, topic, value, key=None):
             return {"topic": topic, "key": key, "value": value}

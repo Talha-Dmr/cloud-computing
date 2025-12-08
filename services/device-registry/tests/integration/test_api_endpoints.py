@@ -2,8 +2,9 @@
 Integration Tests for Device Registry API Endpoints
 """
 
-import pytest
 import json
+
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -44,7 +45,7 @@ class TestDeviceRegistryAPI:
         invalid_data = {
             "device_id": "",  # Empty device_id should fail
             "name": "Invalid Device",
-            "device_type": "sensor"
+            "device_type": "sensor",
         }
 
         response = test_client.post("/devices", json=invalid_data)
@@ -177,9 +178,11 @@ class TestDeviceRegistryAPI:
         update_data = {
             "name": "Updated Device Name",
             "manufacturer": "Updated Corp",
-            "firmware_version": "2.0.0"
+            "firmware_version": "2.0.0",
         }
-        response = test_client.put(f"/devices/{sample_device_data['device_id']}", json=update_data)
+        response = test_client.put(
+            f"/devices/{sample_device_data['device_id']}", json=update_data
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -201,7 +204,9 @@ class TestDeviceRegistryAPI:
 
         # Update status to ACTIVE
         status_data = {"status": "active"}
-        response = test_client.patch(f"/devices/{sample_device_data['device_id']}/status", json=status_data)
+        response = test_client.patch(
+            f"/devices/{sample_device_data['device_id']}/status", json=status_data
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -234,9 +239,11 @@ class TestDeviceRegistryAPI:
         # Test authentication
         auth_data = {
             "device_id": sample_device_data["device_id"],
-            "secret": "test-secret-key"  # In real implementation, this would be validated
+            "secret": "test-secret-key",  # In real implementation, this would be validated
         }
-        response = test_client.post(f"/devices/{sample_device_data['device_id']}/authenticate", json=auth_data)
+        response = test_client.post(
+            f"/devices/{sample_device_data['device_id']}/authenticate", json=auth_data
+        )
 
         # This endpoint might not be fully implemented in test version
         # Adjust expectations based on actual implementation
@@ -253,19 +260,18 @@ class TestDeviceRegistryAPI:
                 "metric_name": "cpu_usage",
                 "value": 75.5,
                 "unit": "percent",
-                "timestamp": "2024-01-01T12:00:00Z"
+                "timestamp": "2024-01-01T12:00:00Z",
             },
             {
                 "metric_name": "memory_usage",
                 "value": 512.0,
                 "unit": "mb",
-                "timestamp": "2024-01-01T12:00:00Z"
-            }
+                "timestamp": "2024-01-01T12:00:00Z",
+            },
         ]
 
         response = test_client.post(
-            f"/devices/{sample_device_data['device_id']}/metrics",
-            json=metrics_data
+            f"/devices/{sample_device_data['device_id']}/metrics", json=metrics_data
         )
 
         # This endpoint might not be fully implemented
@@ -278,7 +284,9 @@ class TestDeviceRegistryAPI:
         test_client.post("/devices", json=sample_device_data)
 
         # Get metrics
-        response = test_client.get(f"/devices/{sample_device_data['device_id']}/metrics")
+        response = test_client.get(
+            f"/devices/{sample_device_data['device_id']}/metrics"
+        )
 
         # This endpoint might not be fully implemented
         assert response.status_code in [200, 501]  # 501 if not implemented
@@ -360,7 +368,9 @@ class TestDeviceRegistryAPI:
         for _ in range(5):
             # Slightly modify device_id to avoid conflicts in concurrent creation
             device_data = sample_device_data.copy()
-            device_data["device_id"] = f"{sample_device_data['device_id']}-{time.time_ns()}"
+            device_data["device_id"] = (
+                f"{sample_device_data['device_id']}-{time.time_ns()}"
+            )
 
             thread = threading.Thread(
                 target=lambda d=device_data: results.append(

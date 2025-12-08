@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, Dict, Any
 from datetime import datetime
-from uuid import UUID
 from enum import Enum
+from typing import Any, Dict, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class DeviceStatus(str, Enum):
     ACTIVE = "active"
@@ -10,27 +12,43 @@ class DeviceStatus(str, Enum):
     MAINTENANCE = "maintenance"
     DECOMMISSIONED = "decommissioned"
 
+
 class DeviceType(str, Enum):
     SENSOR = "sensor"
     ACTUATOR = "actuator"
     GATEWAY = "gateway"
     CONTROLLER = "controller"
 
+
 class DeviceBase(BaseModel):
-    device_id: str = Field(..., min_length=3, max_length=100, description="Unique device identifier")
+    device_id: str = Field(
+        ..., min_length=3, max_length=100, description="Unique device identifier"
+    )
     name: str = Field(..., min_length=1, max_length=200, description="Device name")
     description: Optional[str] = Field(None, description="Device description")
     device_type: DeviceType = Field(..., description="Type of device")
-    manufacturer: Optional[str] = Field(None, max_length=200, description="Device manufacturer")
+    manufacturer: Optional[str] = Field(
+        None, max_length=200, description="Device manufacturer"
+    )
     model: Optional[str] = Field(None, max_length=200, description="Device model")
-    firmware_version: Optional[str] = Field(None, max_length=50, description="Firmware version")
+    firmware_version: Optional[str] = Field(
+        None, max_length=50, description="Firmware version"
+    )
     latitude: Optional[str] = Field(None, max_length=50, description="GPS latitude")
     longitude: Optional[str] = Field(None, max_length=50, description="GPS longitude")
-    location_name: Optional[str] = Field(None, max_length=200, description="Human readable location")
-    metadata: Optional[Dict[str, Any]] = Field(default={}, description="Additional metadata")
+    location_name: Optional[str] = Field(
+        None, max_length=200, description="Human readable location"
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        default={}, description="Additional metadata"
+    )
+
 
 class DeviceCreate(DeviceBase):
-    api_key: Optional[str] = Field(None, description="API key (auto-generated if not provided)")
+    api_key: Optional[str] = Field(
+        None, description="API key (auto-generated if not provided)"
+    )
+
 
 class DeviceUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
@@ -43,7 +61,10 @@ class DeviceUpdate(BaseModel):
     longitude: Optional[str] = Field(None, max_length=50)
     location_name: Optional[str] = Field(None, max_length=200)
     metadata: Optional[Dict[str, Any]] = None
-    health_check_interval: Optional[str] = Field(None, description="Health check interval in seconds")
+    health_check_interval: Optional[str] = Field(
+        None, description="Health check interval in seconds"
+    )
+
 
 class Device(DeviceBase):
     model_config = ConfigDict(from_attributes=True)
@@ -61,23 +82,28 @@ class Device(DeviceBase):
     health_check_interval: str
     last_health_check: Optional[datetime]
 
+
 class DeviceList(BaseModel):
     devices: list[Device]
     total: int
     page: int
     per_page: int
 
+
 class DeviceAuthRequest(BaseModel):
     api_key: str = Field(..., description="Device API key")
+
 
 class DeviceAuth(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+
 class DeviceMetrics(BaseModel):
     device_id: str
     metrics: Dict[str, float]
     timestamp: datetime
+
 
 class HealthCheck(BaseModel):
     device_id: str

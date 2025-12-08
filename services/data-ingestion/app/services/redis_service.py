@@ -1,12 +1,14 @@
-from typing import Dict, Any, Optional
 import json
-import structlog
 from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
+
 import redis.asyncio as redis
+import structlog
 
 from ..config import settings
 
 logger = structlog.get_logger()
+
 
 class RedisService:
     def __init__(self):
@@ -19,9 +21,7 @@ class RedisService:
         """
         try:
             self.redis_client = redis.from_url(
-                settings.redis_url,
-                encoding="utf-8",
-                decode_responses=True
+                settings.redis_url, encoding="utf-8", decode_responses=True
             )
 
             # Test connection
@@ -30,10 +30,7 @@ class RedisService:
             logger.info("Connected to Redis")
 
         except Exception as e:
-            logger.error(
-                "Failed to connect to Redis",
-                error=str(e)
-            )
+            logger.error("Failed to connect to Redis", error=str(e))
             self.is_connected = False
             raise
 
@@ -47,10 +44,7 @@ class RedisService:
             logger.info("Disconnected from Redis")
 
     async def cache_device_info(
-        self,
-        device_id: str,
-        device_info: Dict[str, Any],
-        ttl: int = 300
+        self, device_id: str, device_info: Dict[str, Any], ttl: int = 300
     ):
         """
         Cache device information
@@ -60,22 +54,12 @@ class RedisService:
 
         try:
             key = f"device:{device_id}:info"
-            await self.redis_client.setex(
-                key,
-                ttl,
-                json.dumps(device_info)
-            )
-            logger.debug(
-                "Device info cached",
-                device_id=device_id,
-                ttl=ttl
-            )
+            await self.redis_client.setex(key, ttl, json.dumps(device_info))
+            logger.debug("Device info cached", device_id=device_id, ttl=ttl)
 
         except Exception as e:
             logger.error(
-                "Failed to cache device info",
-                device_id=device_id,
-                error=str(e)
+                "Failed to cache device info", device_id=device_id, error=str(e)
             )
 
     async def get_cached_device_info(self, device_id: str) -> Optional[Dict[str, Any]]:
@@ -96,9 +80,7 @@ class RedisService:
 
         except Exception as e:
             logger.error(
-                "Failed to get cached device info",
-                device_id=device_id,
-                error=str(e)
+                "Failed to get cached device info", device_id=device_id, error=str(e)
             )
             return None
 
@@ -112,9 +94,7 @@ class RedisService:
         try:
             key = f"device:{device_id}:last_seen"
             await self.redis_client.setex(
-                key,
-                86400,  # 24 hours
-                datetime.utcnow().isoformat()
+                key, 86400, datetime.utcnow().isoformat()  # 24 hours
             )
 
             # Also update active devices set
@@ -123,16 +103,10 @@ class RedisService:
 
         except Exception as e:
             logger.error(
-                "Failed to update device last seen",
-                device_id=device_id,
-                error=str(e)
+                "Failed to update device last seen", device_id=device_id, error=str(e)
             )
 
-    async def set_device_health(
-        self,
-        device_id: str,
-        health_data: Dict[str, Any]
-    ):
+    async def set_device_health(self, device_id: str, health_data: Dict[str, Any]):
         """
         Set device health status
         """
@@ -141,17 +115,11 @@ class RedisService:
 
         try:
             key = f"device:{device_id}:health"
-            await self.redis_client.setex(
-                key,
-                3600,  # 1 hour
-                json.dumps(health_data)
-            )
+            await self.redis_client.setex(key, 3600, json.dumps(health_data))  # 1 hour
 
         except Exception as e:
             logger.error(
-                "Failed to set device health",
-                device_id=device_id,
-                error=str(e)
+                "Failed to set device health", device_id=device_id, error=str(e)
             )
 
     async def get_device_status(self, device_id: str) -> Optional[Dict[str, Any]]:
@@ -180,16 +148,14 @@ class RedisService:
                 "device_id": device_id,
                 "last_seen": last_seen,
                 "is_online": is_online,
-                "health": json.loads(health_data) if health_data else None
+                "health": json.loads(health_data) if health_data else None,
             }
 
             return status
 
         except Exception as e:
             logger.error(
-                "Failed to get device status",
-                device_id=device_id,
-                error=str(e)
+                "Failed to get device status", device_id=device_id, error=str(e)
             )
             return None
 
@@ -219,7 +185,7 @@ class RedisService:
             logger.error(
                 "Failed to increment device data points",
                 device_id=device_id,
-                error=str(e)
+                error=str(e),
             )
 
     async def get_active_devices_count(self) -> int:
@@ -232,10 +198,7 @@ class RedisService:
         try:
             return await self.redis_client.scard("devices:active")
         except Exception as e:
-            logger.error(
-                "Failed to get active devices count",
-                error=str(e)
-            )
+            logger.error("Failed to get active devices count", error=str(e))
             return 0
 
     async def get_total_devices_count(self) -> int:
@@ -251,10 +214,7 @@ class RedisService:
             keys = await self.redis_client.keys(pattern)
             return len(keys)
         except Exception as e:
-            logger.error(
-                "Failed to get total devices count",
-                error=str(e)
-            )
+            logger.error("Failed to get total devices count", error=str(e))
             return 0
 
     async def get_data_points_today(self) -> int:
@@ -268,10 +228,7 @@ class RedisService:
             count = await self.redis_client.get("stats:data_points:today")
             return int(count) if count else 0
         except Exception as e:
-            logger.error(
-                "Failed to get today's data points",
-                error=str(e)
-            )
+            logger.error("Failed to get today's data points", error=str(e))
             return 0
 
     async def get_total_data_points(self) -> int:
@@ -285,10 +242,7 @@ class RedisService:
             count = await self.redis_client.get("stats:data_points:total")
             return int(count) if count else 0
         except Exception as e:
-            logger.error(
-                "Failed to get total data points",
-                error=str(e)
-            )
+            logger.error("Failed to get total data points", error=str(e))
             return 0
 
     async def cleanup_expired_data(self):
@@ -312,13 +266,7 @@ class RedisService:
                     await self.redis_client.delete(key)
                     deleted += 1
 
-            logger.info(
-                "Cleaned up expired data",
-                keys_deleted=deleted
-            )
+            logger.info("Cleaned up expired data", keys_deleted=deleted)
 
         except Exception as e:
-            logger.error(
-                "Failed to cleanup expired data",
-                error=str(e)
-            )
+            logger.error("Failed to cleanup expired data", error=str(e))

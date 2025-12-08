@@ -2,12 +2,12 @@
 Unit Tests for Device Models
 """
 
-import pytest
 import uuid
 from datetime import datetime
-from sqlalchemy.exc import IntegrityError
 
+import pytest
 from app.models.device import Device, DeviceMetrics, DeviceStatus, DeviceType
+from sqlalchemy.exc import IntegrityError
 
 
 class TestDeviceModel:
@@ -24,7 +24,7 @@ class TestDeviceModel:
             firmware_version="1.0.0",
             status=DeviceStatus.ACTIVE,
             location={"latitude": 40.7128, "longitude": -74.0060},
-            metadata={"sensor_type": "temperature", "accuracy": 0.5}
+            metadata={"sensor_type": "temperature", "accuracy": 0.5},
         )
 
         test_db_session.add(device)
@@ -46,7 +46,7 @@ class TestDeviceModel:
         device = Device(
             device_id="minimal-device",
             name="Minimal Device",
-            device_type=DeviceType.ACTUATOR
+            device_type=DeviceType.ACTUATOR,
         )
 
         test_db_session.add(device)
@@ -63,15 +63,13 @@ class TestDeviceModel:
     def test_device_unique_device_id(self, test_db_session):
         """Test device_id must be unique"""
         device1 = Device(
-            device_id="duplicate-device",
-            name="Device 1",
-            device_type=DeviceType.SENSOR
+            device_id="duplicate-device", name="Device 1", device_type=DeviceType.SENSOR
         )
 
         device2 = Device(
             device_id="duplicate-device",  # Same device_id
             name="Device 2",
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
 
         test_db_session.add(device1)
@@ -86,7 +84,7 @@ class TestDeviceModel:
         device = Device(
             device_id="status-test-device",
             name="Status Test Device",
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
 
         # Test all valid status values
@@ -101,10 +99,7 @@ class TestDeviceModel:
 
     def test_device_type_enum(self, test_db_session):
         """Test device type enum values"""
-        device = Device(
-            device_id="type-test-device",
-            name="Type Test Device"
-        )
+        device = Device(device_id="type-test-device", name="Type Test Device")
 
         # Test all valid device types
         for device_type in DeviceType:
@@ -123,7 +118,7 @@ class TestDeviceModel:
             "longitude": -74.0060,
             "address": "123 Test St, Test City, NY 10001",
             "floor": 2,
-            "room": "Lab-A"
+            "room": "Lab-A",
         }
 
         metadata_data = {
@@ -132,7 +127,7 @@ class TestDeviceModel:
             "accuracy": 0.5,
             "unit": "celsius",
             "calibration_date": "2024-01-01",
-            "maintenance_interval": 30
+            "maintenance_interval": 30,
         }
 
         device = Device(
@@ -140,7 +135,7 @@ class TestDeviceModel:
             name="JSON Test Device",
             device_type=DeviceType.SENSOR,
             location=location_data,
-            metadata=metadata_data
+            metadata=metadata_data,
         )
 
         test_db_session.add(device)
@@ -157,7 +152,7 @@ class TestDeviceModel:
         device = Device(
             device_id="timestamp-test-device",
             name="Original Name",
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
 
         test_db_session.add(device)
@@ -168,6 +163,7 @@ class TestDeviceModel:
 
         # Wait a bit to ensure timestamp difference
         import time
+
         time.sleep(0.01)
 
         # Update the device
@@ -183,7 +179,7 @@ class TestDeviceModel:
         device = Device(
             device_id="string-test-device",
             name="String Test Device",
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
 
         test_db_session.add(device)
@@ -198,7 +194,7 @@ class TestDeviceModel:
         device = Device(
             device_id="repr-test-device",
             name="Repr Test Device",
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
 
         test_db_session.add(device)
@@ -218,7 +214,7 @@ class TestDeviceMetricsModel:
         device = Device(
             device_id=sample_device_data["device_id"],
             name=sample_device_data["name"],
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
         test_db_session.add(device)
         test_db_session.commit()
@@ -230,7 +226,7 @@ class TestDeviceMetricsModel:
             metric_name="temperature",
             value=23.5,
             unit="celsius",
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
 
         test_db_session.add(metrics)
@@ -251,7 +247,7 @@ class TestDeviceMetricsModel:
         device = Device(
             device_id="metrics-rel-device",
             name="Metrics Relationship Device",
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
         test_db_session.add(device)
         test_db_session.commit()
@@ -261,21 +257,21 @@ class TestDeviceMetricsModel:
         metrics_data = [
             {"metric_name": "temperature", "value": 23.5, "unit": "celsius"},
             {"metric_name": "humidity", "value": 65.2, "unit": "percent"},
-            {"metric_name": "pressure", "value": 1013.25, "unit": "hPa"}
+            {"metric_name": "pressure", "value": 1013.25, "unit": "hPa"},
         ]
 
         for metric_data in metrics_data:
             metrics = DeviceMetrics(
-                device_id=device.id,
-                timestamp=datetime.utcnow(),
-                **metric_data
+                device_id=device.id, timestamp=datetime.utcnow(), **metric_data
             )
             test_db_session.add(metrics)
 
         test_db_session.commit()
 
         # Test relationship
-        device_metrics = test_db_session.query(DeviceMetrics).filter_by(device_id=device.id).all()
+        device_metrics = (
+            test_db_session.query(DeviceMetrics).filter_by(device_id=device.id).all()
+        )
         assert len(device_metrics) == 3
 
         # Test accessing device from metrics
@@ -287,7 +283,7 @@ class TestDeviceMetricsModel:
         device = Device(
             device_id="optional-metrics-device",
             name="Optional Metrics Device",
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
         test_db_session.add(device)
         test_db_session.commit()
@@ -298,7 +294,7 @@ class TestDeviceMetricsModel:
             device_id=device.id,
             metric_name="cpu_usage",
             value=75.5,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
             # unit is optional
         )
 
@@ -313,7 +309,7 @@ class TestDeviceMetricsModel:
         device = Device(
             device_id="metrics-str-device",
             name="Metrics String Device",
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
         test_db_session.add(device)
         test_db_session.commit()
@@ -324,7 +320,7 @@ class TestDeviceMetricsModel:
             metric_name="temperature",
             value=23.5,
             unit="celsius",
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
         test_db_session.add(metrics)
         test_db_session.commit()
@@ -333,18 +329,21 @@ class TestDeviceMetricsModel:
         assert metrics.metric_name in str_repr
         assert str(metrics.value) in str_repr
 
-    @pytest.mark.parametrize("metric_value,expected", [
-        (23.5, 23.5),
-        (0, 0),
-        (-10.5, -10.5),
-        (1000.123456, 1000.123456),
-    ])
+    @pytest.mark.parametrize(
+        "metric_value,expected",
+        [
+            (23.5, 23.5),
+            (0, 0),
+            (-10.5, -10.5),
+            (1000.123456, 1000.123456),
+        ],
+    )
     def test_device_metrics_value_types(self, test_db_session, metric_value, expected):
         """Test device metrics with different value types"""
         device = Device(
             device_id="value-test-device",
             name="Value Test Device",
-            device_type=DeviceType.SENSOR
+            device_type=DeviceType.SENSOR,
         )
         test_db_session.add(device)
         test_db_session.commit()
@@ -354,7 +353,7 @@ class TestDeviceMetricsModel:
             device_id=device.id,
             metric_name="test_metric",
             value=metric_value,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
         test_db_session.add(metrics)
         test_db_session.commit()
