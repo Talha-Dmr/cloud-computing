@@ -53,7 +53,7 @@ jobs:
         output: 'trivy-results.sarif'
 
     - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results.sarif'
 
@@ -104,6 +104,7 @@ jobs:
         DATABASE_URL: postgresql://postgres:password@localhost:5432/test_db
         REDIS_URL: redis://localhost:6379/0
         JWT_SECRET_KEY: test-secret-key
+        PYTHONPATH: ${{ github.workspace }}/services/device-registry
       run: |
         cd services/device-registry
         pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
@@ -114,6 +115,7 @@ jobs:
         REDIS_URL: redis://localhost:6379/1
         JWT_SECRET_KEY: test-secret-key
         SERVICE_TOKEN: test-token
+        PYTHONPATH: ${{ github.workspace }}/services/data-ingestion
       run: |
         cd services/data-ingestion
         pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
