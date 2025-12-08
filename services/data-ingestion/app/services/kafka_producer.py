@@ -24,8 +24,6 @@ class KafkaProducerService:
                 value_serializer=lambda v: json.dumps(v, default=str).encode('utf-8'),
                 key_serializer=lambda k: k.encode('utf-8') if k else None,
                 acks='all',
-                retries=3,
-                batch_size=16384,
                 linger_ms=10,
                 compression_type='gzip'
             )

@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
@@ -27,7 +27,7 @@ services:
     image: redis:7-alpine
     container_name: iot-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -50,7 +50,7 @@ services:
       DOCKER_INFLUXDB_INIT_BUCKET: sensor-data
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: influxdb-token-for-testing
     ports:
-      - "8086:8086"
+      - "8087:8086"
     volumes:
       - influxdb_data:/var/lib/influxdb2
     healthcheck:
@@ -107,8 +107,8 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: password
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5673:5672"
+      - "15673:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -127,7 +127,7 @@ services:
       - "1883:1883"
       - "9001:9001"
     volumes:
-      - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./config/mosquitto/mosquitto_simple.conf:/mosquitto/config/mosquitto.conf
       - mosquitto_data:/mosquitto/data
       - mosquitto_logs:/mosquitto/log
     networks:
@@ -151,8 +151,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./services/device-registry:/app
     networks:
       - iot-network
 
@@ -182,8 +180,6 @@ services:
         condition: service_started
       device-registry:
         condition: service_started
-    volumes:
-      - ./services/data-ingestion:/app
     networks:
       - iot-network
 
@@ -192,7 +188,7 @@ services:
     image: nginx:alpine
     container_name: api-gateway
     ports:
-      - "8000:80"
+      - "8888:80"
     volumes:
       - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./config/nginx/conf.d:/etc/nginx/conf.d
@@ -209,7 +205,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -226,7 +222,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:

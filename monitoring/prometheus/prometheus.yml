@@ -27,40 +27,40 @@ scrape_configs:
     scrape_interval: 10s
 
   # API Gateway (NGINX)
-  - job_name: 'nginx'
-    static_configs:
-      - targets: ['api-gateway:9113']
-    scrape_interval: 10s
+  # - job_name: 'nginx'
+  #   static_configs:
+  #     - targets: ['api-gateway:9113']
+  #   scrape_interval: 10s
 
   # Kafka
-  - job_name: 'kafka'
-    static_configs:
-      - targets: ['kafka:9308']
-    scrape_interval: 10s
+  # - job_name: 'kafka'
+  #   static_configs:
+  #     - targets: ['kafka:9308']
+  #   scrape_interval: 10s
 
-  # PostgreSQL Exporter
-  - job_name: 'postgres'
-    static_configs:
-      - targets: ['postgres-exporter:9187']
-    scrape_interval: 10s
+  # PostgreSQL Exporter (will be added later)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+  #   scrape_interval: 10s
 
-  # Redis Exporter
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis-exporter:9121']
-    scrape_interval: 10s
+  # Redis Exporter (will be added later)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+  #   scrape_interval: 10s
 
-  # RabbitMQ
-  - job_name: 'rabbitmq'
-    static_configs:
-      - targets: ['rabbitmq:15692']
-    scrape_interval: 10s
+  # RabbitMQ (will be added later)
+  # - job_name: 'rabbitmq'
+  #   static_configs:
+  #     - targets: ['rabbitmq:15692']
+  #   scrape_interval: 10s
 
-  # Node Exporter (system metrics)
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['node-exporter:9100']
-    scrape_interval: 10s
+  # Node Exporter (system metrics - will be added later)
+  # - job_name: 'node-exporter'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #   scrape_interval: 10s
 
 alerting:
   alertmanagers:
