@@ -5,8 +5,7 @@ from typing import Any, Dict, List, Optional
 import structlog
 
 from ..config import settings
-from ..schemas.ingestion import (DataIngestionRequest, DeviceStatus,
-                                 IngestionStats)
+from ..schemas.ingestion import DataIngestionRequest, DeviceStatus, IngestionStats
 from .kafka_producer import KafkaProducerService
 from .redis_service import RedisService
 

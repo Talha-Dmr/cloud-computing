@@ -7,7 +7,7 @@ import asyncio
 
 import pytest
 import redis
-from app.core.config import settings
+from app.config import settings
 from app.database import Base, get_db
 from app.main import app
 from fastapi.testclient import TestClient

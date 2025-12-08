@@ -1,6 +1,15 @@
-from .ingestion import (AlertEvent, AlertRule, DataIngestionRequest,
-                        DataIngestionResponse, DataPoint, DataType, DeviceInfo,
-                        DeviceStatus, HealthCheck, IngestionStats)
+from .ingestion import (
+    AlertEvent,
+    AlertRule,
+    DataIngestionRequest,
+    DataIngestionResponse,
+    DataPoint,
+    DataType,
+    DeviceInfo,
+    DeviceStatus,
+    HealthCheck,
+    IngestionStats,
+)
 
 __all__ = [
     "DataIngestionRequest",

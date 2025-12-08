@@ -4,6 +4,7 @@ Simple API Integration Tests - without Kafka dependency
 
 import json
 import os
+
 # Import the app directly to avoid startup issues
 import sys
 

@@ -4,17 +4,20 @@ import time
 from typing import Any, Dict, List, Optional
 
 import structlog
-from fastapi import (BackgroundTasks, Depends, FastAPI, HTTPException,
-                     Response, status)
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge, Histogram,
-                               generate_latest)
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 from .config import settings
-from .schemas.ingestion import (DataIngestionRequest, DataIngestionResponse,
-                                HealthCheck)
+from .schemas.ingestion import DataIngestionRequest, DataIngestionResponse, HealthCheck
 from .services.ingestion_service import DataIngestionService
 from .services.kafka_producer import KafkaProducerService
 from .services.mqtt_service import MQTTService
