@@ -4,10 +4,16 @@ Unit Tests for Device Service Business Logic
 
 import uuid
 from datetime import datetime
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
-from app.models.device import Device, DeviceMetrics, DeviceStatus, DeviceType
+
+from app.models.device import Device
+from app.models.device import DeviceMetrics
+from app.models.device import DeviceStatus
+from app.models.device import DeviceType
 from app.services.device_service import DeviceService
 
 

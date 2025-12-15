@@ -6,8 +6,12 @@ import uuid
 from datetime import datetime
 
 import pytest
-from app.models.device import Device, DeviceMetrics, DeviceStatus, DeviceType
 from sqlalchemy.exc import IntegrityError
+
+from app.models.device import Device
+from app.models.device import DeviceMetrics
+from app.models.device import DeviceStatus
+from app.models.device import DeviceType
 
 
 class TestDeviceModel:

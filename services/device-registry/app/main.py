@@ -1,15 +1,25 @@
 import time
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
 import structlog
-from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi import Depends
+from fastapi import FastAPI
+from fastapi import HTTPException
+from fastapi import Response
+from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+from fastapi.security import HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
+from prometheus_client import CONTENT_TYPE_LATEST
+from prometheus_client import Counter
+from prometheus_client import Histogram
+from prometheus_client import generate_latest
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .database import engine, get_db
+from .database import engine
+from .database import get_db
 from .models import device as device_models
 from .schemas import device as device_schemas
 from .services.auth_service import AuthService

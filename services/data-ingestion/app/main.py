@@ -1,23 +1,32 @@
 import asyncio
 import json
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import structlog
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Response, status
+from fastapi import BackgroundTasks
+from fastapi import Depends
+from fastapi import FastAPI
+from fastapi import HTTPException
+from fastapi import Response
+from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from prometheus_client import (
-    CONTENT_TYPE_LATEST,
-    Counter,
-    Gauge,
-    Histogram,
-    generate_latest,
-)
+from fastapi.security import HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
+from prometheus_client import CONTENT_TYPE_LATEST
+from prometheus_client import Counter
+from prometheus_client import Gauge
+from prometheus_client import Histogram
+from prometheus_client import generate_latest
 
 from .config import settings
-from .schemas.ingestion import DataIngestionRequest, DataIngestionResponse, HealthCheck
+from .schemas.ingestion import DataIngestionRequest
+from .schemas.ingestion import DataIngestionResponse
+from .schemas.ingestion import HealthCheck
 from .services.ingestion_service import DataIngestionService
 from .services.kafka_producer import KafkaProducerService
 from .services.mqtt_service import MQTTService

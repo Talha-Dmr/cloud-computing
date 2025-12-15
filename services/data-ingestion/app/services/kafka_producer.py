@@ -1,6 +1,8 @@
 import asyncio
 import json
-from typing import Any, Dict, Optional
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 import structlog
 from aiokafka import AIOKafkaProducer

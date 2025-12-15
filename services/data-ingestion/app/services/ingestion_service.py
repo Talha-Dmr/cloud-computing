@@ -1,11 +1,17 @@
 import asyncio
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import structlog
 
 from ..config import settings
-from ..schemas.ingestion import DataIngestionRequest, DeviceStatus, IngestionStats
+from ..schemas.ingestion import DataIngestionRequest
+from ..schemas.ingestion import DeviceStatus
+from ..schemas.ingestion import IngestionStats
 from .kafka_producer import KafkaProducerService
 from .redis_service import RedisService
 

@@ -1,3 +1,6 @@
-from .device import Device, DeviceMetrics, DeviceStatus, DeviceType
+from .device import Device
+from .device import DeviceMetrics
+from .device import DeviceStatus
+from .device import DeviceType
 
 __all__ = ["Device", "DeviceMetrics", "DeviceStatus", "DeviceType"]

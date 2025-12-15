@@ -4,9 +4,12 @@ Unit Tests for Ingestion Service Business Logic
 
 import json
 from datetime import datetime
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import pytest
+
 from app.services.ingestion_service import DataIngestionService
 
 

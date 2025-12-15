@@ -127,7 +127,7 @@ services:
       - "1883:1883"
       - "9001:9001"
     volumes:
-      - ./config/mosquitto/mosquitto_simple.conf:/mosquitto/config/mosquitto.conf
+      - ./config/mosquitto/mosquitto_basic.conf:/mosquitto/config/mosquitto.conf
       - mosquitto_data:/mosquitto/data
       - mosquitto_logs:/mosquitto/log
     networks:
@@ -145,7 +145,7 @@ services:
       JWT_SECRET_KEY: your-super-secret-jwt-key-here
       DEBUG: "true"
     ports:
-      - "8001:8001"
+      - "8010:8001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -170,7 +170,7 @@ services:
       SERVICE_TOKEN: service-token
       DEBUG: "true"
     ports:
-      - "8002:8002"
+      - "8011:8002"
     depends_on:
       kafka:
         condition: service_healthy

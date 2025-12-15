@@ -1,5 +1,7 @@
 import json
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 import redis
 from fastapi import FastAPI

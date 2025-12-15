@@ -7,17 +7,21 @@ import asyncio
 
 import pytest
 import redis
-from app.config import settings
-from app.database import Base, get_db
-from app.main import app
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy import event
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.config import settings
+from app.database import Base
+from app.database import get_db
+from app.main import app
+
 # Test Database Configuration
-TEST_DATABASE_URL = "postgresql://iot_user:iot_password@localhost:5433/iot_test_db"
-TEST_REDIS_URL = "redis://localhost:6380/15"
+TEST_DATABASE_URL = "postgresql://postgres:password@localhost:5432/test_db"
+TEST_REDIS_URL = "redis://localhost:6379/0"
 
 
 @pytest.fixture(scope="session")

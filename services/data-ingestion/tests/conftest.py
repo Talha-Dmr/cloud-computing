@@ -5,13 +5,15 @@ Provides shared fixtures for data ingestion tests
 
 import asyncio
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
+from unittest.mock import MagicMock
 
 import pytest
 import redis
+from fastapi.testclient import TestClient
+
 from app.config import settings
 from app.main import app
-from fastapi.testclient import TestClient
 
 # Test Redis Configuration
 TEST_REDIS_URL = "redis://localhost:6380/15"
