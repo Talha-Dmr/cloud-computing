@@ -1,0 +1,19 @@
+apiVersion: v2
+name: iot-platform
+description: A Helm chart for IoT Platform microservices
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+keywords:
+  - iot
+  - microservices
+  - kafka
+  - mqtt
+
+maintainers:
+  - name: Talha-Dmr
+    email: talhademir-100@hotmail.com
+
+sources:
+  - https://github.com/Talha-Dmr/cloud-computing

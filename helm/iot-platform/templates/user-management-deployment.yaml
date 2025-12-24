@@ -1,0 +1,56 @@
+{{- if .Values.userManagement.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-management
+  labels:
+    {{- include "iot-platform.userManagement.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.userManagement.autoscaling.enabled }}
+  replicas: {{ .Values.userManagement.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "iot-platform.userManagement.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "iot-platform.userManagement.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: user-management
+        image: "{{ .Values.userManagement.image.repository }}:{{ .Values.userManagement.image.tag }}"
+        imagePullPolicy: {{ .Values.userManagement.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.userManagement.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          value: {{ .Values.userManagement.env.databaseUrl | quote }}
+        - name: REDIS_URL
+          value: {{ .Values.userManagement.env.redisUrl | quote }}
+        - name: JWT_SECRET_KEY
+          value: {{ .Values.userManagement.env.jwtSecretKey | quote }}
+        - name: DEVICE_REGISTRY_URL
+          value: {{ .Values.userManagement.env.deviceRegistryUrl | quote }}
+        - name: DEBUG
+          value: {{ .Values.userManagement.env.debug | quote }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.userManagement.resources | nindent 10 }}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+{{- end }}

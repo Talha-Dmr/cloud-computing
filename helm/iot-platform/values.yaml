@@ -1,0 +1,258 @@
+# Default values for iot-platform
+global:
+  imagePullPolicy: IfNotPresent
+  storageClass: standard
+
+# Device Registry Service
+deviceRegistry:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/Talha-Dmr/cloud-computing/device-registry
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8001
+    targetPort: 8001
+
+  ingress:
+    enabled: true
+    host: device-registry.local
+    path: /
+    pathType: Prefix
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  env:
+    databaseUrl: "postgresql://postgres:password@postgres:5432/device_registry"
+    redisUrl: "redis://redis:6379/0"
+    jwtSecretKey: "your-super-secret-jwt-key-here"
+    debug: "true"
+
+# Data Ingestion Service
+dataIngestion:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/Talha-Dmr/cloud-computing/data-ingestion
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8002
+    targetPort: 8002
+
+  ingress:
+    enabled: true
+    host: data-ingestion.local
+    path: /
+    pathType: Prefix
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  env:
+    kafkaBootstrapServers: "kafka:9092"
+    redisUrl: "redis://redis:6379/1"
+    deviceRegistryUrl: "http://device-registry:8001"
+    mqttHost: "mosquitto"
+    mqttPort: "1883"
+    jwtSecretKey: "your-super-secret-jwt-key-here"
+    serviceToken: "service-token"
+    debug: "true"
+
+# Alert Engine Service
+alertEngine:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/Talha-Dmr/cloud-computing/alert-engine
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8003
+    targetPort: 8003
+
+  ingress:
+    enabled: true
+    host: alert-engine.local
+    path: /
+    pathType: Prefix
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+
+  env:
+    databaseUrl: "postgresql://postgres:password@postgres:5432/alert_engine"
+    redisUrl: "redis://redis:6379/2"
+    prometheusUrl: "http://prometheus:9090"
+    smtpHost: "smtp.resend.com"
+    smtpPort: "587"
+    smtpUser: ""
+    smtpPassword: ""
+    smtpFrom: "alerts@iot-platform.local"
+    debug: "true"
+
+# User Management Service
+userManagement:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/Talha-Dmr/cloud-computing/user-management
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8004
+    targetPort: 8004
+
+  ingress:
+    enabled: true
+    host: user-management.local
+    path: /
+    pathType: Prefix
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+
+  env:
+    databaseUrl: "postgresql://postgres:password@postgres:5432/user_management"
+    redisUrl: "redis://redis:6379/3"
+    jwtSecretKey: "your-super-secret-jwt-key-here"
+    deviceRegistryUrl: "http://device-registry:8001"
+    debug: "true"
+
+# Notification Service
+notificationService:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/Talha-Dmr/cloud-computing/notification-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8005
+    targetPort: 8005
+
+  ingress:
+    enabled: true
+    host: notification-service.local
+    path: /
+    pathType: Prefix
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+
+  env:
+    kafkaBootstrapServers: "kafka:9092"
+    redisUrl: "redis://redis:6379/4"
+    smtpHost: "smtp.resend.com"
+    smtpPort: "587"
+    smtpUser: ""
+    smtpPassword: ""
+    smtpFrom: "notifications@iot-platform.local"
+    debug: "true"
+
+# Dependencies
+postgres:
+  enabled: true
+  host: postgres
+  port: 5432
+  user: postgres
+  password: password
+  database: iot_platform
+
+redis:
+  enabled: true
+  host: redis
+  port: 6379
+
+kafka:
+  enabled: true
+  bootstrapServers: "kafka:9092"
+
+mosquitto:
+  enabled: true
+  host: mosquitto
+  port: 1883
+
+# Monitoring
+prometheus:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+grafana:
+  enabled: true
+  dashboardEnabled: true

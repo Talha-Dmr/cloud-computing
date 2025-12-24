@@ -1,0 +1,62 @@
+{{- if .Values.notificationService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  labels:
+    {{- include "iot-platform.notificationService.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.notificationService.autoscaling.enabled }}
+  replicas: {{ .Values.notificationService.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "iot-platform.notificationService.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "iot-platform.notificationService.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: notification-service
+        image: "{{ .Values.notificationService.image.repository }}:{{ .Values.notificationService.image.tag }}"
+        imagePullPolicy: {{ .Values.notificationService.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.notificationService.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: {{ .Values.notificationService.env.kafkaBootstrapServers | quote }}
+        - name: REDIS_URL
+          value: {{ .Values.notificationService.env.redisUrl | quote }}
+        - name: SMTP_HOST
+          value: {{ .Values.notificationService.env.smtpHost | quote }}
+        - name: SMTP_PORT
+          value: {{ .Values.notificationService.env.smtpPort | quote }}
+        - name: SMTP_USER
+          value: {{ .Values.notificationService.env.smtpUser | quote }}
+        - name: SMTP_PASSWORD
+          value: {{ .Values.notificationService.env.smtpPassword | quote }}
+        - name: SMTP_FROM
+          value: {{ .Values.notificationService.env.smtpFrom | quote }}
+        - name: DEBUG
+          value: {{ .Values.notificationService.env.debug | quote }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.notificationService.resources | nindent 10 }}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+{{- end }}

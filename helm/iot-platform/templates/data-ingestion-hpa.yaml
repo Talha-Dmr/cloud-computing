@@ -1,0 +1,32 @@
+{{- if and .Values.dataIngestion.enabled .Values.dataIngestion.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: data-ingestion-hpa
+  labels:
+    {{- include "iot-platform.dataIngestion.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: data-ingestion
+  minReplicas: {{ .Values.dataIngestion.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.dataIngestion.autoscaling.maxReplicas }}
+  metrics:
+  {{- if .Values.dataIngestion.autoscaling.targetCPUUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.dataIngestion.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if .Values.dataIngestion.autoscaling.targetMemoryUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.dataIngestion.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- end }}
+{{- end }}

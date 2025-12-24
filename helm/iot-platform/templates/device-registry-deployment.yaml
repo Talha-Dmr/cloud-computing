@@ -1,0 +1,58 @@
+{{- if .Values.deviceRegistry.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: device-registry
+  labels:
+    {{- include "iot-platform.deviceRegistry.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.deviceRegistry.autoscaling.enabled }}
+  replicas: {{ .Values.deviceRegistry.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "iot-platform.deviceRegistry.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "iot-platform.deviceRegistry.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: device-registry
+        image: "{{ .Values.deviceRegistry.image.repository }}:{{ .Values.deviceRegistry.image.tag }}"
+        imagePullPolicy: {{ .Values.deviceRegistry.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.deviceRegistry.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          value: {{ .Values.deviceRegistry.env.databaseUrl | quote }}
+        - name: REDIS_URL
+          value: {{ .Values.deviceRegistry.env.redisUrl | quote }}
+        - name: JWT_SECRET_KEY
+          value: {{ .Values.deviceRegistry.env.jwtSecretKey | quote }}
+        - name: DEBUG
+          value: {{ .Values.deviceRegistry.env.debug | quote }}
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.deviceRegistry.resources | nindent 10 }}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+{{- end }}

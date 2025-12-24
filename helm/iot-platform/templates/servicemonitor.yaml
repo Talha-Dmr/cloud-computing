@@ -1,0 +1,82 @@
+{{- if .Values.prometheus.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: device-registry
+  labels:
+    app: device-registry
+spec:
+  selector:
+    matchLabels:
+      {{- include "iot-platform.deviceRegistry.labels" . | nindent 6 }}
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: data-ingestion
+  labels:
+    app: data-ingestion
+spec:
+  selector:
+    matchLabels:
+      {{- include "iot-platform.dataIngestion.labels" . | nindent 6 }}
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+---
+{{- if .Values.alertEngine.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: alert-engine
+  labels:
+    app: alert-engine
+spec:
+  selector:
+    matchLabels:
+      {{- include "iot-platform.alertEngine.labels" . | nindent 6 }}
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+{{- end }}
+---
+{{- if .Values.userManagement.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: user-management
+  labels:
+    app: user-management
+spec:
+  selector:
+    matchLabels:
+      {{- include "iot-platform.userManagement.labels" . | nindent 6 }}
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+{{- end }}
+---
+{{- if .Values.notificationService.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: notification-service
+  labels:
+    app: notification-service
+spec:
+  selector:
+    matchLabels:
+      {{- include "iot-platform.notificationService.labels" . | nindent 6 }}
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+{{- end }}
+{{- end }}

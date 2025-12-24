@@ -1,0 +1,17 @@
+{{- if .Values.userManagement.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-management
+  labels:
+    {{- include "iot-platform.userManagement.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.userManagement.service.type }}
+  ports:
+  - port: {{ .Values.userManagement.service.port }}
+    targetPort: {{ .Values.userManagement.service.targetPort }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "iot-platform.userManagement.labels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,71 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: iot-platform-ingress
+  labels:
+    app.kubernetes.io/name: iot-platform
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  {{- if .Values.deviceRegistry.enabled }}
+  - host: {{ .Values.deviceRegistry.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: device-registry
+            port:
+              number: {{ .Values.deviceRegistry.service.port }}
+  {{- end }}
+  {{- if .Values.dataIngestion.enabled }}
+  - host: {{ .Values.dataIngestion.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: data-ingestion
+            port:
+              number: {{ .Values.dataIngestion.service.port }}
+  {{- end }}
+  {{- if .Values.alertEngine.enabled }}
+  - host: {{ .Values.alertEngine.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: alert-engine
+            port:
+              number: {{ .Values.alertEngine.service.port }}
+  {{- end }}
+  {{- if .Values.userManagement.enabled }}
+  - host: {{ .Values.userManagement.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: user-management
+            port:
+              number: {{ .Values.userManagement.service.port }}
+  {{- end }}
+  {{- if .Values.notificationService.enabled }}
+  - host: {{ .Values.notificationService.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
+            port:
+              number: {{ .Values.notificationService.service.port }}
+  {{- end }}

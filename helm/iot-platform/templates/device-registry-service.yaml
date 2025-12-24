@@ -1,0 +1,17 @@
+{{- if .Values.deviceRegistry.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: device-registry
+  labels:
+    {{- include "iot-platform.deviceRegistry.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.deviceRegistry.service.type }}
+  ports:
+  - port: {{ .Values.deviceRegistry.service.port }}
+    targetPort: {{ .Values.deviceRegistry.service.targetPort }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "iot-platform.deviceRegistry.labels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,17 @@
+{{- if .Values.dataIngestion.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-ingestion
+  labels:
+    {{- include "iot-platform.dataIngestion.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.dataIngestion.service.type }}
+  ports:
+  - port: {{ .Values.dataIngestion.service.port }}
+    targetPort: {{ .Values.dataIngestion.service.targetPort }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "iot-platform.dataIngestion.labels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,23 @@
+{{- if and .Values.dataIngestion.enabled .Values.dataIngestion.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: data-ingestion-ingress
+  labels:
+    {{- include "iot-platform.dataIngestion.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: {{ .Values.dataIngestion.ingress.host }}
+    http:
+      paths:
+      - path: {{ .Values.dataIngestion.ingress.path }}
+        pathType: {{ .Values.dataIngestion.ingress.pathType }}
+        backend:
+          service:
+            name: data-ingestion
+            port:
+              number: {{ .Values.dataIngestion.service.port }}
+{{- end }}

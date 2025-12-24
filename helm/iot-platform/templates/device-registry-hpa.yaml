@@ -1,0 +1,32 @@
+{{- if and .Values.deviceRegistry.enabled .Values.deviceRegistry.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: device-registry-hpa
+  labels:
+    {{- include "iot-platform.deviceRegistry.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: device-registry
+  minReplicas: {{ .Values.deviceRegistry.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.deviceRegistry.autoscaling.maxReplicas }}
+  metrics:
+  {{- if .Values.deviceRegistry.autoscaling.targetCPUUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.deviceRegistry.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if .Values.deviceRegistry.autoscaling.targetMemoryUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.deviceRegistry.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- end }}
+{{- end }}

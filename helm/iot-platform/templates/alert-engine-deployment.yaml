@@ -1,0 +1,64 @@
+{{- if .Values.alertEngine.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-engine
+  labels:
+    {{- include "iot-platform.alertEngine.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.alertEngine.autoscaling.enabled }}
+  replicas: {{ .Values.alertEngine.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "iot-platform.alertEngine.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "iot-platform.alertEngine.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: alert-engine
+        image: "{{ .Values.alertEngine.image.repository }}:{{ .Values.alertEngine.image.tag }}"
+        imagePullPolicy: {{ .Values.alertEngine.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.alertEngine.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          value: {{ .Values.alertEngine.env.databaseUrl | quote }}
+        - name: REDIS_URL
+          value: {{ .Values.alertEngine.env.redisUrl | quote }}
+        - name: PROMETHEUS_URL
+          value: {{ .Values.alertEngine.env.prometheusUrl | quote }}
+        - name: SMTP_HOST
+          value: {{ .Values.alertEngine.env.smtpHost | quote }}
+        - name: SMTP_PORT
+          value: {{ .Values.alertEngine.env.smtpPort | quote }}
+        - name: SMTP_USER
+          value: {{ .Values.alertEngine.env.smtpUser | quote }}
+        - name: SMTP_PASSWORD
+          value: {{ .Values.alertEngine.env.smtpPassword | quote }}
+        - name: SMTP_FROM
+          value: {{ .Values.alertEngine.env.smtpFrom | quote }}
+        - name: DEBUG
+          value: {{ .Values.alertEngine.env.debug | quote }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.alertEngine.resources | nindent 10 }}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+{{- end }}

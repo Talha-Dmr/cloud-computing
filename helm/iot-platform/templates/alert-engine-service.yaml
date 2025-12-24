@@ -1,0 +1,17 @@
+{{- if .Values.alertEngine.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-engine
+  labels:
+    {{- include "iot-platform.alertEngine.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.alertEngine.service.type }}
+  ports:
+  - port: {{ .Values.alertEngine.service.port }}
+    targetPort: {{ .Values.alertEngine.service.targetPort }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "iot-platform.alertEngine.labels" . | nindent 4 }}
+{{- end }}
